@@ -148,6 +148,31 @@
       }, [])
     );
 
+    // Slug hoá category cho URL (?cat=...) - category gốc có dấu/khoảng trắng/
+    // ký tự đặc biệt (vd "ConsHY · Nhiệm vụ"), không dùng thẳng làm query value.
+    function slugify(str){
+      return str
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+    var slugToCategory = {};
+    categories.forEach(function(cat){ slugToCategory[slugify(cat)] = cat; });
+
+    function categoryFromUrl(){
+      var slug = new URLSearchParams(window.location.search).get("cat");
+      return (slug && slugToCategory[slug]) ? slugToCategory[slug] : "all";
+    }
+
+    function syncUrl(cat){
+      var url = new URL(window.location.href);
+      if (cat === "all") url.searchParams.delete("cat");
+      else url.searchParams.set("cat", slugify(cat));
+      history.replaceState(null, "", url.pathname + url.search);
+    }
+
     function formatDate(iso){
       var d = new Date(iso + "T00:00:00");
       return d.toLocaleDateString("vi-VN");
@@ -194,17 +219,30 @@
       });
     }
 
+    activeCategory = categoryFromUrl();
+
     categories.forEach(function(cat){
       var btn = document.createElement("button");
-      btn.className = "filter-chip" + (cat === "all" ? " active" : "");
+      btn.className = "filter-chip" + (cat === activeCategory ? " active" : "");
       btn.textContent = cat === "all" ? "Tất cả" : cat;
       btn.addEventListener("click", function(){
         activeCategory = cat;
         filtersEl.querySelectorAll(".filter-chip").forEach(function(c){ c.classList.remove("active"); });
         btn.classList.add("active");
+        syncUrl(cat);
         render();
       });
       filtersEl.appendChild(btn);
+    });
+
+    // Vào trang bằng link có sẵn ?cat=... (reload, chia sẻ link) - phục hồi
+    // đúng bộ lọc thay vì luôn rơi về "Tất cả".
+    window.addEventListener("popstate", function(){
+      activeCategory = categoryFromUrl();
+      filtersEl.querySelectorAll(".filter-chip").forEach(function(c){
+        c.classList.toggle("active", c.textContent === (activeCategory === "all" ? "Tất cả" : activeCategory));
+      });
+      render();
     });
 
     render();
