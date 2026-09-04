@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tài khoản Test ConsHY</title>
+<style>
+  :root{
+    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
+    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
+    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
+    --w100:#2563a6; --w80:#3d7ab8; --w60:#6b9fcc; --w40:#a3c2dd;
+    --ok:#389e0d; --warn:#d48806; --bypass:#2563a6;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+      --w100:#6ba3dd; --w80:#5c8fc4; --w60:#4d78a3; --w40:#3d6182;
+      --ok:#52c41a; --warn:#e8a33d; --bypass:#6ba3dd;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+    --w100:#6ba3dd; --w80:#5c8fc4; --w60:#4d78a3; --w40:#3d6182;
+    --ok:#52c41a; --warn:#e8a33d; --bypass:#6ba3dd;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper); color:var(--ink); margin:0;
+    font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    font-size:15px; line-height:1.6;
+  }
+  h1,h2,h3{ font-family:'Be Vietnam Pro',system-ui,sans-serif; text-wrap:balance; margin:0; }
+  code, .mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
+  a{ color:var(--accent); }
+
+  .wrap{ max-width:1040px; margin:0 auto; padding:56px 24px 96px; }
+
+  header.hero{
+    display:flex; flex-direction:column; gap:10px; padding-bottom:32px;
+    border-bottom:1px solid var(--line); margin-bottom:36px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--accent); font-weight:600;
+  }
+  h1.title{ font-size:34px; font-weight:800; letter-spacing:-.01em; }
+  .lead{ color:var(--ink-soft); font-size:16px; max-width:66ch; margin-top:4px; }
+
+  .callout{
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:var(--radius); padding:16px 18px; margin:20px 0 8px;
+    display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; box-shadow:var(--shadow);
+  }
+  .callout b{ color:var(--ink); }
+  .pw-badge{
+    font-family:'IBM Plex Mono',monospace; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:6px; padding:2px 8px; font-weight:600; font-size:13.5px;
+  }
+
+  section{ margin-top:48px; }
+  .section-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+  h2.section-title{ font-size:21px; font-weight:700; }
+  .section-note{ color:var(--ink-faint); font-size:13px; }
+
+  .table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); background:var(--surface); }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:900px; }
+  thead th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--ink-faint); font-weight:600;
+    padding:12px 14px; background:var(--surface-2); position:sticky; top:0;
+    border-bottom:1px solid var(--line);
+  }
+  tbody td{ padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--surface-2); }
+  td.num{ font-variant-numeric:tabular-nums; }
+
+  .user-cell{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--ink); }
+  .name-cell{ font-weight:500; }
+  .sub{ color:var(--ink-faint); font-size:12px; }
+
+  .weight-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace;
+    font-weight:600; font-size:12.5px; padding:2px 9px 2px 7px; border-radius:999px;
+    color:#fff; white-space:nowrap;
+  }
+  .weight-chip .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .w100{ background:var(--w100); } .w80{ background:var(--w80); }
+  .w60{ background:var(--w60); } .w40{ background:var(--w40); color:var(--ink); }
+  .w40 .dot{ background:var(--ink); }
+  .w-none{ color:var(--ink-faint); font-size:12.5px; }
+
+  .flag{
+    display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+    padding:2px 9px; border-radius:999px;
+  }
+  .flag--bypass{ background:var(--accent-soft); color:var(--accent); }
+  .flag--none{ color:var(--ink-faint); }
+  .flag--warn{ background:rgba(212,136,6,.14); color:var(--warn); }
+
+  .perm-pill{ font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  .perm-manage{ background:#e6f0fa; color:#1657a3; }
+  .perm-hier{ background:#e8f6e1; color:#2f7a13; }
+  .perm-view{ background:#fbf0dd; color:#a3670a; }
+  :root:not([data-theme="light"]) .perm-manage,
+  :root[data-theme="dark"] .perm-manage{ background:rgba(107,163,221,.16); color:#8fc0ec; }
+  :root:not([data-theme="light"]) .perm-hier,
+  :root[data-theme="dark"] .perm-hier{ background:rgba(82,196,26,.14); color:#8fd66a; }
+  :root:not([data-theme="light"]) .perm-view,
+  :root[data-theme="dark"] .perm-view{ background:rgba(232,163,61,.14); color:#f0bd73; }
+
+  .scenario-list{ display:flex; flex-direction:column; gap:14px; counter-reset:scenario; }
+  .scenario{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:16px 18px 16px 56px; position:relative; box-shadow:var(--shadow);
+  }
+  .scenario::before{
+    counter-increment:scenario; content:counter(scenario);
+    position:absolute; left:16px; top:16px; width:26px; height:26px; border-radius:50%;
+    background:var(--accent); color:var(--accent-ink); font-family:'IBM Plex Mono',monospace;
+    font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center;
+  }
+  .scenario h3{ font-size:14.5px; font-weight:700; margin-bottom:5px; }
+  .scenario p{ margin:0; color:var(--ink-soft); font-size:13.5px; }
+  .scenario .who{ font-family:'IBM Plex Mono',monospace; color:var(--accent); font-weight:600; }
+
+  .foot{ margin-top:56px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:12.5px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .foot a{ color:var(--ink-soft); }
+
+  @media (max-width:640px){
+    h1.title{ font-size:26px; }
+    .wrap{ padding:32px 16px 64px; }
+    .scenario{ padding-left:16px; padding-top:52px; }
+    .scenario::before{ left:16px; top:16px; }
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="eyebrow">ConsHY · Module Nhiệm vụ · Dữ liệu test</span>
+    <h1 class="title">Tài khoản test</h1>
+    <p class="lead">18 tài khoản đang có trên hệ thống thật, dùng để kiểm thử luồng phân quyền theo trọng số chức vụ (xem tài liệu <a href="https://claude.ai/code/artifact/46d2692e-66c1-41f5-9ab9-1a17e1751937" id="doc1-link">Module Nhiệm vụ</a> để hiểu mô hình). Sắp theo trọng số giảm dần — trọng số càng cao, thấy càng nhiều task của người khác.</p>
+    <div class="callout">
+      <span>🔑 Mật khẩu cho <b>tất cả</b> tài khoản bên dưới:</span>
+      <span class="pw-badge">123456</span>
+      <span style="color:var(--ink-faint)">— đây là dữ liệu thật đang chạy, không phải tài khoản demo cô lập. Sửa/xoá gì trên các tài khoản này đều ảnh hưởng dữ liệu chung.</span>
+    </div>
+  </header>
+
+  <section id="accounts">
+    <div class="section-head">
+      <h2 class="section-title">Danh sách 18 tài khoản</h2>
+      <span class="section-note">Trọng số = mức phân cấp chức vụ · Quyền đặc biệt = bỏ qua mọi kiểm tra công trình</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Tài khoản</th>
+            <th>Họ tên</th>
+            <th>Chức vụ</th>
+            <th>Trọng số</th>
+            <th>Vai trò hệ thống</th>
+            <th>Quyền đặc biệt</th>
+            <th>Phòng ban · Chi nhánh</th>
+          </tr>
+        </thead>
+        <tbody id="accounts-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ct001">
+    <div class="section-head">
+      <h2 class="section-title">Thành viên công trình mẫu — CT001 (Nhà máy A)</h2>
+      <span class="section-note">Công trình có đủ tầng phân quyền, dùng để test cấp trên/cấp dưới/ngang hàng ngay được</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Tài khoản</th>
+            <th>Chức vụ trong CT001</th>
+            <th>Trọng số</th>
+            <th>Quyền trên công trình</th>
+          </tr>
+        </thead>
+        <tbody id="ct001-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="scenarios">
+    <div class="section-head">
+      <h2 class="section-title">Kịch bản test gợi ý</h2>
+      <span class="section-note">Đăng nhập lần lượt để thấy sự khác nhau giữa các cấp quyền</span>
+    </div>
+    <div class="scenario-list">
+
+      <div class="scenario">
+        <h3>Bypass thật (role) khác trọng số cao (chức vụ)</h3>
+        <p>Đăng nhập <span class="who">cotgv</span> → vào <b>Danh sách nhiệm vụ</b>, đổi bộ lọc công trình ở header sang một công trình cotgv <i>chưa từng</i> được thêm làm thành viên → vẫn thấy đủ task (role "Ban giám đốc" là role bypass toàn hệ thống). Đổi sang <span class="who">dongnh</span> (cùng chức vụ Ban Giám đốc, cùng trọng số 100, nhưng role "Giám đốc công ty" <b>không</b> nằm trong danh sách bypass) → công trình đó phải <b>trống</b> nếu dongnh chưa là thành viên. Đây là cách phân biệt "được cấp quyền vượt cấp qua vai trò" và "trọng số chức vụ cao".</p>
+      </div>
+
+      <div class="scenario">
+        <h3>Cấp trên thấy &amp; sửa được cấp dưới, không thấy cấp trên của mình</h3>
+        <p>Đăng nhập <span class="who">thanglv</span> (Chỉ huy trưởng, trọng số 80, thành viên CT001) → mở task của <span class="who">tungbv</span>/<span class="who">thudt</span>/<span class="who">dungtv</span>/<span class="who">hanglt</span> (đều &lt; 80) trong CT001 → phải xem <b>và sửa</b> được. Sau đó thử tìm task của <span class="who">cotgv</span>/<span class="who">dongnh</span> (100) trong CT001 → không được xuất hiện trong danh sách của thanglv (trừ khi thanglv cũng là assignee/reporter của chính task đó).</p>
+      </div>
+
+      <div class="scenario">
+        <h3>Nhân viên thường: chỉ thấy việc của mình</h3>
+        <p>Đăng nhập <span class="who">tungbv</span> (Kỹ sư, 40, quyền "Theo cấp bậc") → Danh sách nhiệm vụ ở CT001 chỉ hiện task tungbv là người giao/được giao. Thử mở trực tiếp 1 task của <span class="who">huongvt</span> qua URL (?tid=...) → phải bị chặn/không tải được dữ liệu.</p>
+      </div>
+
+      <div class="scenario">
+        <h3>"Xem toàn bộ" — thấy hết nhưng không sửa được</h3>
+        <p>Đăng nhập <span class="who">dungtv</span>, <span class="who">thudt</span> hoặc <span class="who">hanglt</span> (quyền "Xem toàn bộ" trong CT001) → phải thấy <i>mọi</i> task của CT001, kể cả của thanglv/cotgv, nhưng nút sửa/trạng thái trên các task không phải của mình phải bị khoá.</p>
+      </div>
+
+      <div class="scenario">
+        <h3>Xem chéo ngang hàng — có hướng, phải bật tay</h3>
+        <p>Vào <b>Phân quyền công trình → Xem chéo ngang hàng</b> (đăng nhập cotgv hoặc dongnh), chọn 1 chức vụ ở "Chức vụ được xem" rồi chọn đích ngang hàng (kể cả chọn lại chính chức vụ đó) → bấm "Bật". Đăng nhập 1 người thuộc chức vụ đích → phải bắt đầu thấy task của người thuộc chức vụ nguồn trong công trình chung, dù trước đó (2 người cùng trọng số, đều quyền "Theo cấp bậc") không thấy nhau. Đăng nhập ngược lại người thuộc chức vụ nguồn → <b>không</b> tự thấy chức vụ đích (một chiều) trừ khi bật thêm chiều kia.</p>
+      </div>
+
+      <div class="scenario">
+        <h3>Không có chức vụ / chưa xếp trọng số</h3>
+        <p><span class="who">admin</span> không gắn chức vụ (position) nên không có trọng số — chỉ thấy được nhờ role "Quản trị hệ thống" (bypass). Dùng tài khoản này để test giao diện/luồng CRUD chung không phụ thuộc phân quyền công trình.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>ConsHY — tài liệu nội bộ cho tester &amp; BA, dữ liệu lấy trực tiếp từ hệ thống thật, có thể lệch nếu tài khoản/thành viên công trình thay đổi sau ngày tạo tài liệu.</span>
+    <span id="gen-date"></span>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var accounts = [
+    ["admin","Admin","— (không chức vụ)",null,"Quản trị hệ thống","bypass","—"],
+    ["cotgv","Giang Văn Cốt","Ban Giám đốc",100,"Ban giám đốc","bypass","Phòng phát triển phần mềm · Hưng Yên"],
+    ["dongnh","Nguyễn Hữu Đông","Ban Giám đốc",100,"Giám đốc công ty","none","Phòng phát triển phần mềm · Hưng Yên"],
+    ["longdv","Đinh Văn Long","Chỉ huy trưởng công trình",80,"Chỉ huy trưởng","none","Phòng phát triển phần mềm · Hà Nội"],
+    ["huydq","Đỗ Quang Huy","Chỉ huy trưởng công trình",80,"Chỉ huy trưởng","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["thanglv","Lê Văn Thắng","Chỉ huy trưởng công trình",80,"Chỉ huy trưởng","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["khoand","Nguyễn Đình Khoa","Giám sát công trình",60,"Giám sát công trình","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["maipt","Phan Thị Mai","Giám sát công trình",60,"Vật tư","none","Phòng Kế toán · Hà Nội"],
+    ["anhttl","Trần Thị Lan Anh","Giám sát công trình",60,"Giám sát công trình","none","Ban Giám đốc · Hà Nội"],
+    ["huongvt","Vũ Thị Hương","Giám sát công trình",60,"Giám sát công trình","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["minhpd","Phạm Đức Minh","Trưởng phòng Kỹ thuật",60,"Trưởng phòng kỹ thuật","none","Phòng Kỹ thuật · Hà Nội"],
+    ["thudt","Đặng Thị Thu","An toàn lao động (HSE)",40,"An toàn lao động","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["hanglt","Lương Thị Hằng","Kế toán công trình",40,"Kế toán","warn","Phòng Kế toán · Hưng Yên"],
+    ["tungbv","Bùi Văn Tùng","Kỹ sư thi công / Đội trưởng",40,"Kỹ sư thi công","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["namhv","Hoàng Văn Nam","Kỹ sư thi công / Đội trưởng",40,"Kỹ sư thi công","none","Phòng Kỹ thuật · Hưng Yên"],
+    ["hungnv","Nguyễn Văn Hùng","Kỹ sư thi công / Đội trưởng",40,"Kỹ sư thi công","none","Ban Giám đốc · Hà Nội"],
+    ["sonnv","Ngô Văn Sơn","Vật tư / Kho",40,"Vật tư","none","Phòng Vật tư · Hà Nội"],
+    ["dungtv","Trịnh Văn Dũng","Vật tư / Kho",40,"Vật tư","none","Phòng Vật tư · Hưng Yên"]
+  ];
+
+  function weightChip(w){
+    if(w==null) return '<span class="w-none">chưa xếp cấp</span>';
+    var cls = w>=100?'w100':w>=80?'w80':w>=60?'w60':'w40';
+    return '<span class="weight-chip '+cls+'"><span class="dot"></span>'+w+'</span>';
+  }
+  function flag(kind){
+    if(kind==='bypass') return '<span class="flag flag--bypass">⚡ Bypass toàn hệ thống</span>';
+    if(kind==='warn') return '<span class="flag flag--warn">⚠ role trùng tên, không phải bypass</span>';
+    return '<span class="flag flag--none">—</span>';
+  }
+
+  var abody = document.getElementById('accounts-body');
+  accounts.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="user-cell">'+r[0]+'</td>'+
+      '<td class="name-cell">'+r[1]+'</td>'+
+      '<td>'+r[2]+'</td>'+
+      '<td class="num">'+weightChip(r[3])+'</td>'+
+      '<td>'+r[4]+'</td>'+
+      '<td>'+flag(r[5])+'</td>'+
+      '<td class="sub">'+r[6]+'</td>';
+    abody.appendChild(tr);
+  });
+
+  var ct001 = [
+    ["cotgv","Ban Giám đốc",100,"manage","Quản lý"],
+    ["dongnh","Ban Giám đốc",100,"manage","Quản lý"],
+    ["thanglv","Chỉ huy trưởng công trình",80,"manage","Quản lý"],
+    ["minhpd","Trưởng phòng Kỹ thuật",60,"manage","Quản lý"],
+    ["huongvt","Giám sát công trình",60,"manage","Quản lý"],
+    ["tungbv","Kỹ sư thi công / Đội trưởng",40,"hier","Theo cấp bậc"],
+    ["thudt","An toàn lao động (HSE)",40,"view","Xem toàn bộ"],
+    ["dungtv","Vật tư / Kho",40,"view","Xem toàn bộ"],
+    ["hanglt","Kế toán công trình",40,"view","Xem toàn bộ"]
+  ];
+  var cbody = document.getElementById('ct001-body');
+  ct001.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="user-cell">'+r[0]+'</td>'+
+      '<td>'+r[1]+'</td>'+
+      '<td class="num">'+weightChip(r[2])+'</td>'+
+      '<td><span class="perm-pill perm-'+r[3]+'">'+r[4]+'</span></td>';
+    cbody.appendChild(tr);
+  });
+
+  try{
+    var d = new Date();
+    document.getElementById('gen-date').textContent =
+      'Cập nhật ' + d.toLocaleDateString('vi-VN');
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
