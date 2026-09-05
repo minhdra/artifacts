@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DB thực tế ConsHY</title>
+<style>
+  :root{
+    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
+    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
+    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
+    --good:#2f7d4f; --good-soft:#e6f3ea;
+    --warn:#a15a1f; --warn-soft:#f7ecdf;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+      --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+      --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+    --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+    --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--paper); color:var(--ink); margin:0;
+    font-family:'IBM Plex Sans','Arial',system-ui,-apple-system,sans-serif;
+    font-size:15.5px; line-height:1.65;
+  }
+  h1,h2,h3{ font-family:'Be Vietnam Pro','Arial',system-ui,sans-serif; text-wrap:balance; margin:0; color:var(--ink); }
+  code{ font-family:'IBM Plex Mono',ui-monospace,monospace; background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:13px; }
+  a{ color:var(--accent); }
+  .wrap{ max-width:920px; margin:0 auto; padding:56px 24px 96px; }
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1.title{ font-size:32px; font-weight:800; letter-spacing:-.01em; margin-top:10px; }
+  .lead{ color:var(--ink-soft); font-size:16px; max-width:66ch; margin-top:12px; }
+  .metabar{ display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  .metabar span{ font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--ink-soft); }
+  section{ margin-top:48px; }
+  section h2{ font-size:22px; font-weight:700; }
+  h3{ font-size:16.5px; font-weight:700; margin-top:28px; margin-bottom:10px; }
+  p{ max-width:70ch; }
+  .tablewrap{ overflow-x:auto; margin-top:14px; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); font-size:13.5px; }
+  th,td{ text-align:left; padding:9px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  thead th{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); }
+  tbody tr:last-child td{ border-bottom:none; }
+  .steps{ counter-reset:step; list-style:none; margin:16px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .steps li{ counter-increment:step; position:relative; padding-left:38px; font-size:14px; max-width:70ch; }
+  .steps li::before{ content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .callout{ margin-top:16px; padding:13px 17px; border-left:3px solid var(--good); background:var(--good-soft); font-size:13.8px; border-radius:0 8px 8px 0; max-width:70ch; }
+  .callout b{ color:var(--good); }
+  .callout.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
+  .callout.warn b{ color:var(--warn); }
+  footer{ margin-top:64px; padding-top:18px; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">Đối chiếu thực trạng · Postgres production</span>
+  <h1 class="title">DB thực tế: build_management &amp; chat_management</h1>
+  <p class="lead">Xem trực tiếp schema (chỉ đọc, không sửa gì) để hiệu chỉnh lại kế hoạch SSO — vài giả định trong bản kế hoạch ban đầu không khớp với dữ liệu thật.</p>
+  <div class="metabar">
+    <span>Cập nhật 05/09/2026</span>
+    <span>Nguồn: Postgres production, truy vấn read-only</span>
+    <span>Nội bộ — không public</span>
+  </div>
+
+  <section>
+    <h2>Đã xem gì</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Database</th><th>Số bảng</th><th>Đáng chú ý</th></tr></thead>
+        <tbody>
+          <tr><td><code>build_management</code></td><td>35</td><td><code>system_users</code>, <code>user_profiles</code>, <code>roles</code>, <code>role_functions</code>, <code>user_roles</code>, cùng các bảng nghiệp vụ <code>f_*</code> (tài chính) và <code>t_*</code> (task/công trình)</td></tr>
+          <tr><td><code>chat_management</code></td><td>23</td><td><code>users</code>, <code>refresh_tokens</code>, <code>meetings</code>, <code>meeting_participants</code>, <code>meeting_messages</code>, <code>conversations</code>, <code>conversation_members</code>, <code>messages</code> — quản lý migration bằng Sequelize (<code>SequelizeMeta</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bốn phát hiện làm đổi hướng kế hoạch</h2>
+
+    <h3>1. Danh tính build tách làm hai bảng, khoá là chuỗi chứ không phải UUID</h3>
+    <p>Không có một bảng <code>user</code> gộp chung như bản kế hoạch ban đầu giả định. Thực tế:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Bảng</th><th>Vai trò</th><th>Cột đáng chú ý</th></tr></thead>
+        <tbody>
+          <tr><td><code>system_users</code></td><td>Đăng nhập</td><td><code>user_id varchar</code> (khoá chính, KHÔNG phải uuid), <code>user_name</code>, <code>password</code>, <code>type</code>, <code>active_flag</code></td></tr>
+          <tr><td><code>user_profiles</code></td><td>Hồ sơ</td><td><code>user_id varchar</code> (1-1 với system_users), <code>full_name</code>, <code>email</code>, <code>avatar</code>, <code>phone_number</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>Ảnh hưởng:</b> api-sso xác thực phải join hai bảng này, không phải một. Mọi bảng mới tham chiếu tới người dùng phải dùng kiểu <code>varchar</code> khớp <code>system_users.user_id</code>, không dùng <code>uuid</code> như bản thảo trước.</p>
+
+    <h3>2. Bảng người dùng của chat đã mang sẵn "dấu vân tay" của build</h3>
+    <p><code>chat_management.users</code> có khoá chính riêng là <code>uuid</code>, và có bộ xác thực riêng hoàn chỉnh (<code>password</code>, <code>refresh_tokens</code> — 121 dòng). Nhưng đồng thời nó cũng mang gần như nguyên vẹn bộ cột đặc trưng của build: <code>active_flag</code>, <code>created_by_user_id</code>, <code>lu_user_id</code>, <code>lu_updated</code>, <code>gender</code>, <code>date_of_birth</code> — nhiều khả năng bảng này từng được tạo dựa theo đúng khuôn mẫu thiết kế của <code>system_users</code>/<code>user_profiles</code>, rồi sau đó phát triển tách riêng thành một hệ đăng nhập độc lập.</p>
+
+    <h3>3. Toàn bộ dữ liệu hiện có là dữ liệu test</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Bảng</th><th>Số dòng</th></tr></thead>
+        <tbody>
+          <tr><td><code>build_management.system_users</code></td><td>18</td></tr>
+          <tr><td><code>chat_management.users</code></td><td>21</td></tr>
+          <tr><td><code>chat_management.meetings</code></td><td>26</td></tr>
+          <tr><td><code>chat_management.meeting_participants</code></td><td>48</td></tr>
+          <tr><td><code>chat_management.conversation_members</code></td><td>608</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><b>Xác nhận đã có:</b> toàn bộ số liệu trên là dữ liệu test, không phải người dùng thật đang phụ thuộc. Điều này đổi hẳn cách gộp danh tính — xem mục dưới.</div>
+
+    <h3>4. Meeting không phải ứng dụng xây mới — đã có dữ liệu thật đang chạy trong DB test</h3>
+    <p>Bản kế hoạch trước xem meeting là "ứng dụng mới, làm sau cùng". Thực tế <code>meetings</code>/<code>meeting_participants</code>/<code>meeting_messages</code> đã tồn tại sẵn trong <code>chat_management</code> với 26 cuộc họp và 48 lượt tham gia (đều là dữ liệu test).</p>
+    <div class="callout warn"><b>Cần sửa trong Tài liệu 1:</b> meeting phải đi theo đúng nhịp xử lý như chat — cùng đợt xoá dữ liệu test, cùng thời điểm go-live — không phải "xây mới hoàn toàn tách biệt".</div>
+  </section>
+
+  <section>
+    <h2>Cách gộp danh tính — bản điều chỉnh: xoá và tạo lại, không di trú</h2>
+    <p>Bản kế hoạch trước đề nghị đối chiếu 18 với 21 người dùng theo email rồi map từng dòng — hợp lý nếu đó là người dùng thật. Nhưng đã xác nhận toàn bộ là dữ liệu test, nên bước đối chiếu thận trọng đó là thừa. Cách sạch nhất: <b>không di trú dữ liệu cũ, xoá và tạo lại trên hệ thống mới</b>.</p>
+    <ol class="steps">
+      <li>Chốt mốc go-live — sau mốc này ngừng sinh thêm tài khoản/dữ liệu test.</li>
+      <li>Xoá sạch <code>chat_management.users</code>, <code>refresh_tokens</code>, và toàn bộ dữ liệu phụ thuộc (hội thoại, tin nhắn, cuộc họp mẫu) — không cần giữ gì lại.</li>
+      <li>Trong <code>build_management</code>, chỉ xoá các dòng <code>system_users</code>/<code>user_profiles</code> là tài khoản test — giữ nguyên <code>roles</code>/<code>functions</code>/<code>role_functions</code> vì đó là cấu hình phân quyền, không phải dữ liệu test.</li>
+      <li>Tạo tài khoản thật đầu tiên trực tiếp trên <code>build_management</code> (nguồn danh tính duy nhất) qua giao diện quản trị hiện có của api-core.</li>
+      <li>Bật api-sso. Người dùng thật đăng nhập lần đầu ở chat/meeting → hệ thống tự tạo dòng nội bộ (uuid) kèm cột ánh xạ sang mã người dùng build — không cần thao tác đối chiếu tay, vì không còn dữ liệu cũ nào cần khớp.</li>
+      <li>Xoá cơ chế đăng nhập/mật khẩu riêng của chat ngay trong bước này (không phải để tới bước dọn dẹp cuối) — không còn lý do giữ tương thích với tài khoản cũ.</li>
+    </ol>
+    <p>So với bản trước (giữ nguyên khoá uuid nội bộ của chat, chỉ thêm cột ánh xạ rồi map dần): nguyên tắc thêm-cột-ánh-xạ vẫn giữ nguyên và vẫn đúng kỹ thuật — chỉ khác là không cần chạy đối chiếu thủ công cho 21 dòng hiện có nữa, vì chúng bị xoá sạch trước khi tính năng ánh xạ đi vào hoạt động.</p>
+  </section>
+
+  <footer>XDHY · ConsHY · Ghi nhận từ Postgres thực tế · Nội bộ — không chia sẻ ra ngoài do nêu tên bảng/cột hệ thống thật</footer>
+</div>
+</body>
+</html>

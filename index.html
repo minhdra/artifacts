@@ -39,10 +39,13 @@
 
   .wrap{ max-width:880px; margin:0 auto; padding:64px 24px 96px; }
 
+  .topline{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
   .eyebrow{
     font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em;
     text-transform:uppercase; color:var(--accent); font-weight:600;
   }
+  .admin-link{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
+  .admin-link:hover{ color:var(--accent); }
   h1.title{ font-size:36px; font-weight:800; letter-spacing:-.01em; margin-top:8px; }
   .lead{ color:var(--ink-soft); font-size:16px; max-width:62ch; margin-top:12px; }
 
@@ -76,13 +79,14 @@
     display:flex; align-items:center; justify-content:center; font-size:19px;
   }
   .card .body{ flex:1; min-width:0; }
-  .card h2{ font-size:15.5px; font-weight:700; }
+  .card h2{ font-size:15.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
   .card p{ margin:3px 0 0; color:var(--ink-faint); font-size:12.8px; }
   .card .tag{
     display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600;
     letter-spacing:.04em; text-transform:uppercase; color:var(--accent); background:var(--accent-soft);
-    border-radius:5px; padding:2px 7px; margin-right:8px; vertical-align:1px;
+    border-radius:5px; padding:2px 7px; margin-right:2px; vertical-align:1px;
   }
+  .card .lock{ font-size:11px; }
   .card .meta{ flex:none; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
   .card .open{
     flex:none; font-size:13px; font-weight:600; color:var(--accent); border:1px solid var(--line);
@@ -102,9 +106,12 @@
 </head>
 <body>
   <div class="wrap">
-    <span class="eyebrow">Kho lưu trữ cá nhân</span>
+    <div class="topline">
+      <span class="eyebrow">Kho lưu trữ cá nhân</span>
+      <a class="admin-link" href="admin.html">Quản trị →</a>
+    </div>
     <h1 class="title">Thư viện tài liệu</h1>
-    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu. Mỗi mục tự chứa 1 trang HTML, mở trực tiếp không cần tải về.</p>
+    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu. Mỗi mục tự chứa 1 trang, mở trực tiếp không cần tải về. Mục khoá 🔒 cần mật khẩu mới xem được.</p>
 
     <div class="filters" id="filters"></div>
     <div id="empty" class="empty" style="display:none">Không có tài liệu nào trong nhóm này.</div>
@@ -114,42 +121,12 @@
   </div>
 
   <script>
-    // Thêm tài liệu mới: bỏ file .html vào thư mục này rồi thêm 1 dòng ở mảng bên dưới.
-    // "category" là nhãn nhóm/lọc — dùng lại category cũ nếu cùng chủ đề, hoặc đặt category mới,
-    // trang sẽ tự thêm nút lọc tương ứng, không cần sửa gì khác.
-    var items = [
-      {
-        icon: "🏗️",
-        category: "ConsHY · Nhiệm vụ",
-        title: "Module Nhiệm vụ",
-        desc: "Tài liệu chức năng + hướng dẫn kiểm thử cho tester & BA",
-        href: "module-nhiem-vu.html",
-        date: "2026-09-04"
-      },
-      {
-        icon: "🔑",
-        category: "ConsHY · Nhiệm vụ",
-        title: "Tài khoản test",
-        desc: "18 tài khoản test kèm kịch bản kiểm thử phân quyền theo trọng số",
-        href: "tai-khoan-test.html",
-        date: "2026-09-04"
-      }
-    ];
-
     var filtersEl = document.getElementById("filters");
     var groupsEl = document.getElementById("groups");
     var emptyEl = document.getElementById("empty");
     var activeCategory = "all";
+    var items = [];
 
-    var categories = ["all"].concat(
-      items.reduce(function(acc, it){
-        if (acc.indexOf(it.category) === -1) acc.push(it.category);
-        return acc;
-      }, [])
-    );
-
-    // Slug hoá category cho URL (?cat=...) - category gốc có dấu/khoảng trắng/
-    // ký tự đặc biệt (vd "ConsHY · Nhiệm vụ"), không dùng thẳng làm query value.
     function slugify(str){
       return str
         .normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -158,10 +135,13 @@
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
     }
-    var slugToCategory = {};
-    categories.forEach(function(cat){ slugToCategory[slugify(cat)] = cat; });
 
-    function categoryFromUrl(){
+    function formatDate(iso){
+      var d = new Date(iso + "T00:00:00");
+      return d.toLocaleDateString("vi-VN");
+    }
+
+    function categoryFromUrl(slugToCategory){
       var slug = new URLSearchParams(window.location.search).get("cat");
       return (slug && slugToCategory[slug]) ? slugToCategory[slug] : "all";
     }
@@ -171,11 +151,6 @@
       if (cat === "all") url.searchParams.delete("cat");
       else url.searchParams.set("cat", slugify(cat));
       history.replaceState(null, "", url.pathname + url.search);
-    }
-
-    function formatDate(iso){
-      var d = new Date(iso + "T00:00:00");
-      return d.toLocaleDateString("vi-VN");
     }
 
     function render(){
@@ -205,11 +180,12 @@
         list.className = "list";
         byYear[year].forEach(function(it){
           var a = document.createElement("a");
-          a.href = it.href;
+          a.href = "doc.html?slug=" + encodeURIComponent(it.slug);
           a.className = "card";
+          var lock = it.visibility === "private" ? '<span class="lock" title="Cần mật khẩu">🔒</span>' : "";
           a.innerHTML =
             '<div class="icon">' + it.icon + '</div>' +
-            '<div class="body"><h2><span class="tag">' + it.category + '</span>' + it.title + '</h2><p>' + it.desc + '</p></div>' +
+            '<div class="body"><h2><span class="tag">' + it.category + '</span>' + it.title + lock + '</h2><p>' + it.desc + '</p></div>' +
             '<div class="meta">' + formatDate(it.date) + '</div>' +
             '<div class="open">Xem →</div>';
           list.appendChild(a);
@@ -219,36 +195,54 @@
       });
     }
 
-    activeCategory = categoryFromUrl();
+    function setupFilters(){
+      var categories = ["all"].concat(
+        items.reduce(function(acc, it){
+          if (acc.indexOf(it.category) === -1) acc.push(it.category);
+          return acc;
+        }, [])
+      );
+      var slugToCategory = {};
+      categories.forEach(function(cat){ slugToCategory[slugify(cat)] = cat; });
+      activeCategory = categoryFromUrl(slugToCategory);
 
-    categories.forEach(function(cat){
-      var btn = document.createElement("button");
-      btn.className = "filter-chip" + (cat === activeCategory ? " active" : "");
-      btn.textContent = cat === "all" ? "Tất cả" : cat;
-      btn.addEventListener("click", function(){
-        activeCategory = cat;
-        filtersEl.querySelectorAll(".filter-chip").forEach(function(c){ c.classList.remove("active"); });
-        btn.classList.add("active");
-        syncUrl(cat);
+      categories.forEach(function(cat){
+        var btn = document.createElement("button");
+        btn.className = "filter-chip" + (cat === activeCategory ? " active" : "");
+        btn.textContent = cat === "all" ? "Tất cả" : cat;
+        btn.addEventListener("click", function(){
+          activeCategory = cat;
+          filtersEl.querySelectorAll(".filter-chip").forEach(function(c){ c.classList.remove("active"); });
+          btn.classList.add("active");
+          syncUrl(cat);
+          render();
+        });
+        filtersEl.appendChild(btn);
+      });
+
+      window.addEventListener("popstate", function(){
+        activeCategory = categoryFromUrl(slugToCategory);
+        filtersEl.querySelectorAll(".filter-chip").forEach(function(c){
+          c.classList.toggle("active", c.textContent === (activeCategory === "all" ? "Tất cả" : activeCategory));
+        });
         render();
       });
-      filtersEl.appendChild(btn);
-    });
+    }
 
-    // Vào trang bằng link có sẵn ?cat=... (reload, chia sẻ link) - phục hồi
-    // đúng bộ lọc thay vì luôn rơi về "Tất cả".
-    window.addEventListener("popstate", function(){
-      activeCategory = categoryFromUrl();
-      filtersEl.querySelectorAll(".filter-chip").forEach(function(c){
-        c.classList.toggle("active", c.textContent === (activeCategory === "all" ? "Tất cả" : activeCategory));
+    Promise.all([
+      fetch("docs.json").then(function(r){ return r.json(); }),
+      fetch("/api/visibility").then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+    ]).then(function(results){
+      var registry = results[0];
+      var visibilityMap = results[1];
+      items = registry.map(function(it){
+        return Object.assign({}, it, { visibility: visibilityMap[it.slug] || "public" });
       });
+      setupFilters();
       render();
+      document.getElementById("foot").textContent =
+        items.length + " tài liệu · cập nhật lần cuối " + formatDate(items.reduce(function(m, it){ return it.date > m ? it.date : m; }, items[0].date));
     });
-
-    render();
-
-    document.getElementById("foot").textContent =
-      items.length + " tài liệu · cập nhật lần cuối " + formatDate(items.reduce(function(m, it){ return it.date > m ? it.date : m; }, items[0].date));
   </script>
 </body>
 </html>

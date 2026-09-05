@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch SSO ConsHY</title>
+<style>
+  :root{
+    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
+    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
+    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
+    --good:#2f7d4f; --good-soft:#e6f3ea;
+    --warn:#a15a1f; --warn-soft:#f7ecdf;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+      --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+      --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+    --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+    --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--paper); color:var(--ink); margin:0;
+    font-family:'IBM Plex Sans','Arial',system-ui,-apple-system,sans-serif;
+    font-size:15.5px; line-height:1.65;
+  }
+  h1,h2,h3{ font-family:'Be Vietnam Pro','Arial',system-ui,sans-serif; text-wrap:balance; margin:0; color:var(--ink); }
+  code{ font-family:'IBM Plex Mono',ui-monospace,monospace; background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:13px; }
+  a{ color:var(--accent); }
+  .wrap{ max-width:960px; margin:0 auto; padding:56px 24px 96px; }
+
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1.title{ font-size:34px; font-weight:800; letter-spacing:-.01em; margin-top:10px; }
+  .lead{ color:var(--ink-soft); font-size:16px; max-width:66ch; margin-top:12px; }
+
+  .metabar{ display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  .metabar span{ font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--ink-soft); }
+
+  nav.toc{ position:sticky; top:0; z-index:5; background:var(--paper); border-bottom:1px solid var(--line); padding:14px 0; margin-top:36px; display:flex; gap:6px; flex-wrap:wrap; }
+  nav.toc a{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-decoration:none; color:var(--ink-soft); padding:6px 11px; border-radius:7px; border:1px solid transparent; }
+  nav.toc a:hover{ border-color:var(--line); color:var(--ink); }
+
+  section{ margin-top:52px; }
+  .docmark{ display:flex; align-items:baseline; gap:12px; }
+  .docmark .num{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--accent-ink); background:var(--accent); padding:3px 10px; border-radius:6px; }
+  section h2{ font-size:23px; font-weight:700; }
+  section > .lede{ margin-top:8px; color:var(--ink-soft); max-width:68ch; }
+  h3{ font-size:17px; font-weight:700; margin-top:32px; margin-bottom:12px; }
+  p{ max-width:70ch; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:16px 0 22px; padding:12px 16px; background:var(--accent-soft); border:1px solid var(--line); border-radius:var(--radius); font-family:'IBM Plex Mono',monospace; font-size:12px; }
+  .legend b{ color:var(--accent); margin-right:4px; }
+
+  .appgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:14px; margin-top:16px; }
+  .appcard{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:18px 20px 20px; }
+  .appcard .name{ font-family:'Be Vietnam Pro',sans-serif; font-weight:700; font-size:16px; }
+  .appcard .role{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); display:block; margin-top:2px; }
+  .tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; vertical-align:1px; }
+  .tag.new{ color:var(--good); background:var(--good-soft); }
+  .tag.existing{ color:var(--warn); background:var(--warn-soft); }
+  .appcard ol{ margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .appcard li{ display:grid; grid-template-columns:32px 1fr; gap:9px; font-size:13.8px; align-items:baseline; }
+  .phasechip{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; text-align:center; padding:2px 0; border-radius:5px; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line); height:fit-content; }
+
+  .diagram{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:22px; margin-top:16px; overflow-x:auto; }
+  .diagram .cap{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-faint); margin-top:16px; border-top:1px dashed var(--line); padding-top:12px; max-width:none; }
+  .mermaid{ display:flex; justify-content:center; }
+
+  .steps{ counter-reset:step; list-style:none; margin:16px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .steps li{ counter-increment:step; position:relative; padding-left:38px; font-size:14px; }
+  .steps li::before{ content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  .tablewrap{ overflow-x:auto; margin-top:14px; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); font-size:13.5px; }
+  th,td{ text-align:left; padding:9px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  thead th{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  .callout{ margin-top:16px; padding:13px 17px; border-left:3px solid var(--good); background:var(--good-soft); font-size:13.8px; border-radius:0 8px 8px 0; }
+  .callout b{ color:var(--good); }
+  .callout.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
+  .callout.warn b{ color:var(--warn); }
+
+  footer{ margin-top:64px; padding-top:18px; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">Tài liệu kỹ thuật · Hệ thống ConsHY (XDHY)</span>
+  <h1 class="title">Kế hoạch SSO cho build-web, chat &amp; meeting</h1>
+  <p class="lead">Đưa ba ứng dụng về một điểm đăng nhập duy nhất, dùng chung một danh tính, trên một domain gốc — chưa code, chỉ thống nhất hướng.</p>
+  <div class="metabar">
+    <span>Cập nhật 05/09/2026</span>
+    <span>Phạm vi: build-web · chat · meeting</span>
+    <span>Toàn bộ dữ liệu hiện tại là dữ liệu test</span>
+  </div>
+
+  <nav class="toc">
+    <a href="#doc1">Tài liệu 1 — Việc từng app phải làm</a>
+    <a href="#doc2">Tài liệu 2 — Kiến trúc &amp; luồng xử lý</a>
+    <a href="#kien-truc">Sơ đồ kiến trúc</a>
+    <a href="#luong-login">Luồng đăng nhập</a>
+    <a href="#luong-api">Luồng gọi API</a>
+  </nav>
+
+  <section id="doc1">
+    <div class="docmark"><span class="num">Tài liệu 1</span><h2>Việc từng app phải làm</h2></div>
+    <p class="lede">Thứ tự pha P0→P5 đúng theo trình tự triển khai — pha sau xây trên nền pha trước, không đảo thứ tự.</p>
+
+    <div class="callout">
+      <b>Vì toàn bộ dữ liệu hiện tại chỉ là dữ liệu test</b> (18 user build, 21 user chat, 26 cuộc họp mẫu) — không cần bước đối chiếu/mapping người dùng cũ. Cách sạch nhất: xoá sạch dữ liệu test trước khi bật SSO thật, tạo lại tài khoản thật ngay trên hệ thống mới. Chi tiết ở mục "Xử lý dữ liệu test" cuối Tài liệu 2.
+    </div>
+
+    <div class="legend">
+      <div><b>P0</b>Hạ tầng</div>
+      <div><b>P1</b>Tách api-sso</div>
+      <div><b>P2</b>Đổi token RS256</div>
+      <div><b>P3</b>Domain chung + bỏ login</div>
+      <div><b>P4</b>Xoá dữ liệu test + go-live danh tính</div>
+      <div><b>P5</b>Dọn dẹp &amp; nối meeting</div>
+    </div>
+
+    <div class="appgrid">
+      <div class="appcard">
+        <div class="name">api-sso <span class="tag new">mới</span></div>
+        <span class="role">auth.xaydung.vn — chủ sở hữu duy nhất của danh tính</span>
+        <ol>
+          <li><span class="phasechip">P1</span><span>Service mới, trỏ thẳng DB <code>build_management</code> hiện có — không tạo DB riêng, không nhân bản dữ liệu người dùng.</span></li>
+          <li><span class="phasechip">P1</span><span>Chuyển logic <code>login/refresh/logout//me/reset-password</code> từ api-core sang, giữ nguyên cơ chế cookie hiện tại để không làm gián đoạn build-web.</span></li>
+          <li><span class="phasechip">P1</span><span>Thêm bảng phiên đăng nhập có thể thu hồi — refresh token hiện tại không revoke được.</span></li>
+          <li><span class="phasechip">P2</span><span>Đổi sang ký token bằng cặp khoá riêng (RS256), phát hành khoá công khai để nơi khác tự kiểm tra chữ ký.</span></li>
+          <li><span class="phasechip">P3</span><span>Trang đăng nhập/đăng xuất dùng chung, set cookie ở domain gốc.</span></li>
+          <li><span class="phasechip">P4</span><span>Thêm điểm tra cứu nội bộ để chat đổi mã người dùng lấy tên/avatar hiển thị.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">api-core</div>
+        <span class="role">Giữ nguyên vai trò: quản lý người dùng &amp; phân quyền</span>
+        <ol>
+          <li><span class="phasechip">P1</span><span>Gỡ route đăng nhập/đăng xuất — chuyển hẳn sang api-sso, tránh hai nơi cùng phát hành token.</span></li>
+          <li><span class="phasechip">P1</span><span>Giữ nguyên toàn bộ CRUD người dùng, vai trò, quyền — api-sso chỉ đọc, không ghi nghiệp vụ này.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">api-gateway</div>
+        <span class="role">api.xaydung.vn — cổng vào duy nhất</span>
+        <ol>
+          <li><span class="phasechip">P2</span><span>Đổi cách kiểm tra token: từ so khớp một khoá bí mật dùng chung sang kiểm chữ ký bằng khoá công khai.</span></li>
+          <li><span class="phasechip">P3</span><span>Cho phép nhiều nguồn gọi đến (nhiều subdomain) thay vì chỉ một origin như hiện tại.</span></li>
+          <li><span class="phasechip">P4</span><span>Nối tuyến đường đã có sẵn cho chat vào một dịch vụ chat thật (khung đã dựng sẵn, chỉ chưa gắn).</span></li>
+          <li><span class="phasechip">P5</span><span>Thêm tuyến đường tương tự cho meeting.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">build-web</div>
+        <span class="role">app.xaydung.vn — finance + task</span>
+        <ol>
+          <li><span class="phasechip">P3</span><span>Bỏ trang đăng nhập riêng trong ứng dụng. Lúc khởi động, hỏi api-sso đã đăng nhập chưa; chưa thì chuyển sang trang đăng nhập chung.</span></li>
+          <li><span class="phasechip">P3</span><span>Nút đăng xuất gọi sang api-sso thay vì api-core như hiện tại.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">chat</div>
+        <span class="role">chat.xaydung.vn</span>
+        <ol>
+          <li><span class="phasechip">P4</span><span>Xoá sạch bảng người dùng, refresh token, và dữ liệu hội thoại/cuộc họp test hiện có — không cần giữ lại gì vì toàn bộ là dữ liệu thử.</span></li>
+          <li><span class="phasechip">P4</span><span>Bỏ khả năng tự đăng nhập ngay từ bước này (không phải đợi tới P5) — không còn ràng buộc phải tương thích tài khoản cũ.</span></li>
+          <li><span class="phasechip">P4</span><span>Người dùng thật đầu tiên đăng nhập qua api-sso: chat tự tạo dòng nội bộ + mã ánh xạ, không cần thao tác tay.</span></li>
+          <li><span class="phasechip">P5</span><span>Nơi cần hiện tên/avatar: tra cứu qua api-sso theo mã người dùng, không tự lưu hồ sơ riêng nữa.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">meeting <span class="tag existing">đã có sẵn trong chat_management</span></div>
+        <span class="role">meeting.xaydung.vn — không phải xây từ đầu</span>
+        <ol>
+          <li><span class="phasechip">P4</span><span>Đi đúng nhịp với chat — cùng nơi lưu dữ liệu, cùng đợt xoá dữ liệu test, cùng thời điểm go-live.</span></li>
+          <li><span class="phasechip">P5</span><span>Bỏ trang đăng nhập riêng (nếu có), dùng lại phiên đăng nhập chung.</span></li>
+          <li><span class="phasechip">P5</span><span>Nối vào cổng vào chung qua tuyến đường riêng cho meeting.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">Hạ tầng chung</div>
+        <span class="role">Domain · mạng nội bộ · chứng chỉ</span>
+        <ol>
+          <li><span class="phasechip">P0</span><span>Một domain gốc, năm subdomain: ứng dụng chính, chat, meeting, trang đăng nhập chung, cổng vào.</span></li>
+          <li><span class="phasechip">P0</span><span>Chứng chỉ bảo mật dạng wildcard cho cả domain gốc, khỏi xin lẻ từng subdomain.</span></li>
+          <li><span class="phasechip">P1</span><span>Thêm service api-sso vào hạ tầng chạy hiện có, cùng mạng nội bộ với các service khác.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="doc2">
+    <div class="docmark"><span class="num">Tài liệu 2</span><h2>Kiến trúc hệ thống &amp; luồng xử lý</h2></div>
+    <p class="lede">Trạng thái đích sau khi hoàn tất các pha ở Tài liệu 1.</p>
+
+    <h3 id="kien-truc">Sơ đồ kiến trúc tổng thể</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TB
+  subgraph Client["Trình duyệt · 1 domain gốc xaydung.vn"]
+    BW["app.xaydung.vn<br/>build-web · finance + task"]
+    CH["chat.xaydung.vn<br/>chat"]
+    MT["meeting.xaydung.vn<br/>meeting"]
+  end
+
+  SSO["auth.xaydung.vn<br/>api-sso<br/>login · refresh · logout · /me · JWKS"]
+  GW["api.xaydung.vn<br/>api-gateway<br/>verify JWT qua JWKS"]
+
+  subgraph Services["Dịch vụ nghiệp vụ"]
+    APICORE["api-core<br/>user CRUD · RBAC"]
+    APITASK["api-task-management<br/>công trình · task"]
+    CHATSVC["chat-service<br/>chat + meeting"]
+  end
+
+  subgraph DB["PostgreSQL"]
+    DB1[("build_management<br/>danh tính · task · finance")]
+    DB2[("chat_management<br/>hội thoại · cuộc họp")]
+  end
+
+  BW --> GW
+  CH --> GW
+  MT --> GW
+  BW -. chưa có session .-> SSO
+  CH -. chưa có session .-> SSO
+  MT -. chưa có session .-> SSO
+  GW --> APICORE
+  GW --> APITASK
+  GW --> CHATSVC
+  SSO --> DB1
+  APICORE --> DB1
+  APITASK --> DB1
+  CHATSVC --> DB2
+  CHATSVC -. đọc tên/avatar theo mã người dùng .-> SSO
+      </pre>
+      <p class="cap">Một nơi giữ danh tính (build_management), một nơi phát hành phiên đăng nhập (api-sso), một cổng vào kiểm tra token (api-gateway). Chat/meeting chỉ còn giữ dữ liệu nghiệp vụ của mình.</p>
+    </div>
+
+    <h3 id="luong-login">Luồng đăng nhập lần đầu trong phiên trình duyệt</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+  actor U as Người dùng
+  participant App as App (build-web / chat / meeting)
+  participant SSO as api-sso (auth.xaydung.vn)
+  participant DB as build_management
+
+  U->>App: Mở app lần đầu trong phiên
+  App->>SSO: GET /me (kèm cookie hiện có, nếu có)
+  SSO-->>App: 401 chưa có session
+  App-->>U: Chuyển sang auth.xaydung.vn/login?redirect=...
+  U->>SSO: Nhập tài khoản, mật khẩu
+  SSO->>DB: Xác thực + load vai trò/quyền
+  DB-->>SSO: Hợp lệ
+  SSO-->>U: Set-Cookie access/refresh (domain gốc) + chuyển về redirect
+  U->>App: Quay lại app, cookie đã có
+  App->>SSO: GET /me
+  SSO-->>App: 200, user + functions
+  Note over U,App: Mở app thứ hai trong cùng phiên -> bước 2 trả 200 ngay, không còn thấy màn đăng nhập
+      </pre>
+      <p class="cap">Đăng nhập ở app nào cũng đi qua đúng một trang. Toàn bộ subdomain cùng domain gốc nên cookie dùng chung được.</p>
+    </div>
+
+    <h3 id="luong-api">Luồng gọi API sau khi đã đăng nhập</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+  participant App as App
+  participant GW as api-gateway
+  participant SVC as Service nghiệp vụ
+
+  App->>GW: Request kèm cookie access token
+  GW->>GW: Verify chữ ký RS256 (cache khoá công khai theo kid)
+  alt Token hợp lệ
+    GW->>SVC: Forward kèm mã người dùng đã xác minh
+    SVC-->>GW: Kết quả
+    GW-->>App: 200
+  else Token hết hạn
+    GW-->>App: 401
+    App->>GW: POST /refresh (refresh token cookie)
+    GW-->>App: Token mới, tự gửi lại request gốc
+  end
+      </pre>
+      <p class="cap">Gateway không còn cần biết khoá bí mật dùng chung — chỉ giữ khoá công khai. Lộ một service không còn nghĩa là giả mạo được token toàn hệ.</p>
+    </div>
+
+    <h3>Sở hữu dữ liệu — trước / sau</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dữ liệu</th><th>Trước</th><th>Sau</th></tr></thead>
+        <tbody>
+          <tr><td>Tài khoản build-web</td><td>build_management</td><td>Không đổi</td></tr>
+          <tr><td>Tài khoản chat/meeting</td><td>Bảng người dùng riêng trong chat_management</td><td>Không còn xác thực riêng — chỉ giữ mã tham chiếu sang danh tính build</td></tr>
+          <tr><td>Phiên đăng nhập</td><td>Không có nơi lưu — không thu hồi được</td><td>Có bảng phiên riêng, thu hồi được từng thiết bị</td></tr>
+          <tr><td>Hội thoại / tin nhắn / cuộc họp</td><td>chat_management</td><td>Không đổi vai trò — chỉ đổi cách xác định người dùng</td></tr>
+          <tr><td>Ai được vào app nào</td><td>Ngầm định, có tài khoản là vào được</td><td>Có danh sách rõ ràng theo từng app</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Xử lý dữ liệu test — cách clean nhất</h3>
+    <p>Toàn bộ dữ liệu hiện tại (18 user build, 21 user chat, 26 cuộc họp, 608 lượt tham gia hội thoại) là dữ liệu test. Vì không có người dùng thật đang phụ thuộc, <b>không cần bước đối chiếu/mapping</b> — cách sạch nhất là xoá và tạo lại, không phải di trú.</p>
+    <ol class="steps">
+      <li>Chốt trước ngày go-live SSO — sau mốc này không sinh thêm dữ liệu test nữa.</li>
+      <li>Xoá sạch bảng người dùng + dữ liệu phụ thuộc (hội thoại, tin nhắn, cuộc họp mẫu) trong <code>chat_management</code>.</li>
+      <li>Trong <code>build_management</code>, chỉ xoá tài khoản người dùng test — giữ nguyên khung vai trò/quyền/chức năng đã cấu hình (không phải dữ liệu test, là cấu hình hệ thống).</li>
+      <li>Tạo tài khoản thật đầu tiên trực tiếp trên <code>build_management</code> qua giao diện quản trị hiện có.</li>
+      <li>Bật api-sso. Người dùng thật đăng nhập lần đầu ở chat/meeting — hệ thống tự tạo hồ sơ nội bộ tương ứng, không cần thao tác tay.</li>
+    </ol>
+    <div class="callout warn"><b>Trước khi xoá:</b> xác nhận lại với người phụ trách chat/meeting rằng không có dữ liệu thật nào lẫn trong 21 tài khoản/26 cuộc họp hiện có — thao tác xoá không hoàn tác được.</div>
+  </section>
+
+  <footer>XDHY · ConsHY · Tài liệu nội bộ · Chưa triển khai code — dùng để thống nhất hướng trước khi bắt tay implement</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  (function(){
+    var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'neutral',
+      securityLevel: 'strict',
+      fontFamily: "'IBM Plex Sans', Arial, sans-serif"
+    });
+  })();
+</script>
+</body>
+</html>

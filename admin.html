@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản trị thư viện</title>
+<style>
+  :root{
+    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
+    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
+    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
+    --good:#2f7d4f; --err:#b3432d;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+      --good:#6fbf90; --err:#e08b76;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+    --good:#6fbf90; --err:#e08b76;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--paper); color:var(--ink); margin:0; font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:15px; }
+  h1{ font-family:'Be Vietnam Pro',sans-serif; }
+  .wrap{ max-width:720px; margin:0 auto; padding:56px 24px 96px; }
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1.title{ font-size:28px; font-weight:800; margin:10px 0 6px; }
+  .lead{ color:var(--ink-soft); font-size:14.5px; margin:0 0 28px; max-width:60ch; }
+
+  /* login gate */
+  .login-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:28px; max-width:380px; }
+  .login-card input{ width:100%; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--paper); color:var(--ink); }
+  .login-card button{ margin-top:10px; width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-weight:700; cursor:pointer; }
+  .msg{ font-size:12.5px; margin-top:8px; min-height:1.2em; }
+  .msg.err{ color:var(--err); }
+  .msg.ok{ color:var(--good); }
+
+  /* doc list */
+  .row{ display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); padding:14px 18px; box-shadow:var(--shadow); margin-bottom:10px; }
+  .row .icon{ flex:none; width:38px; height:38px; border-radius:10px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .row .body{ flex:1; min-width:0; }
+  .row h2{ font-size:14.5px; font-weight:700; margin:0; }
+  .row p{ font-size:12px; color:var(--ink-faint); margin:2px 0 0; font-family:'IBM Plex Mono',monospace; }
+  .switch{ flex:none; display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; }
+  .switch button{
+    border:1px solid var(--line); background:var(--surface-2); color:var(--ink-soft); font-family:inherit; font-size:11.5px; font-weight:600;
+    padding:6px 12px; border-radius:999px; cursor:pointer;
+  }
+  .switch button.public.active{ background:var(--good); border-color:var(--good); color:#fff; }
+  .switch button.private.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .toolbar{ margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
+  .toolbar a{ font-size:12.5px; color:var(--ink-faint); }
+  #setupNote{ margin-top:24px; padding:14px 16px; border:1px dashed var(--line); border-radius:var(--radius); font-size:12.5px; color:var(--ink-faint); display:none; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+  <span class="eyebrow">XDHY · Kho lưu trữ cá nhân</span>
+  <h1 class="title">Quản trị thư viện</h1>
+  <p class="lead">Đánh dấu từng tài liệu là public (ai có link cũng xem được) hoặc private (cần mật khẩu). Lưu ngay, không cần deploy lại.</p>
+
+  <div id="login">
+    <div class="login-card">
+      <label style="font-size:12.5px;color:var(--ink-soft);display:block;margin-bottom:6px;">Admin token</label>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="Nhập admin token">
+      <button id="loginBtn">Đăng nhập</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <div id="panel" style="display:none;">
+    <div class="toolbar">
+      <span style="font-size:12.5px;color:var(--ink-faint);" id="panelHint">Đã đăng nhập admin</span>
+      <a href="index.html">← Về thư viện</a>
+    </div>
+    <div id="list"></div>
+    <div id="setupNote"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'xdhy_admin_token';
+  var tokenInput = document.getElementById('tokenInput');
+  var loginBtn = document.getElementById('loginBtn');
+  var loginMsg = document.getElementById('loginMsg');
+  var loginEl = document.getElementById('login');
+  var panelEl = document.getElementById('panel');
+  var listEl = document.getElementById('list');
+  var setupNoteEl = document.getElementById('setupNote');
+
+  function getToken(){
+    try { return sessionStorage.getItem(STORAGE_KEY) || ''; } catch(e) { return ''; }
+  }
+  function setToken(t){
+    try { sessionStorage.setItem(STORAGE_KEY, t); } catch(e) {}
+  }
+
+  function renderList(registry, visibilityMap){
+    listEl.innerHTML = '';
+    registry.forEach(function(it){
+      var vis = visibilityMap[it.slug] || 'public';
+      var row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML =
+        '<div class="icon">' + it.icon + '</div>' +
+        '<div class="body"><h2>' + it.title + '</h2><p>' + it.slug + '</p></div>' +
+        '<div class="switch">' +
+          '<button data-vis="public" class="public' + (vis==='public'?' active':'') + '">Public</button>' +
+          '<button data-vis="private" class="private' + (vis==='private'?' active':'') + '">Private</button>' +
+        '</div>';
+      row.querySelectorAll('button').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          setVisibility(it.slug, btn.dataset.vis, row);
+        });
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  function setVisibility(slug, visibility, row){
+    fetch('/api/admin/visibility', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + getToken()
+      },
+      body: JSON.stringify({ slug: slug, visibility: visibility })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+      .then(function(res){
+        if (res.ok) {
+          row.querySelectorAll('.switch button').forEach(function(b){
+            b.classList.toggle('active', b.dataset.vis === visibility);
+          });
+          setupNoteEl.style.display = 'none';
+        } else {
+          setupNoteEl.style.display = 'block';
+          setupNoteEl.textContent = 'Không lưu được: ' + (res.body.message || 'lỗi không rõ') + ' — xem hướng dẫn cấu hình EDGE_CONFIG_ID/VERCEL_API_TOKEN.';
+        }
+      })
+      .catch(function(){
+        setupNoteEl.style.display = 'block';
+        setupNoteEl.textContent = 'Lỗi kết nối tới server.';
+      });
+  }
+
+  function loadPanel(){
+    Promise.all([
+      fetch('docs.json').then(function(r){ return r.json(); }),
+      fetch('/api/visibility').then(function(r){ return r.json(); })
+    ]).then(function(res){
+      loginEl.style.display = 'none';
+      panelEl.style.display = 'block';
+      renderList(res[0], res[1]);
+    });
+  }
+
+  function tryLogin(token){
+    // /api/admin/visibility yêu cầu slug+visibility hợp lệ để qua bước xác
+    // thực - gọi thử với slug rỗng chỉ để kiểm tra token đúng hay sai (400 vẫn
+    // là "token OK, thiếu tham số"; 401 mới là token sai).
+    fetch('/api/admin/visibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({})
+    }).then(function(r){
+      if (r.status === 401) {
+        loginMsg.textContent = 'Sai admin token.';
+        loginMsg.className = 'msg err';
+        return;
+      }
+      setToken(token);
+      loadPanel();
+    }).catch(function(){
+      loginMsg.textContent = 'Lỗi kết nối.';
+      loginMsg.className = 'msg err';
+    });
+  }
+
+  loginBtn.addEventListener('click', function(){
+    var t = tokenInput.value.trim();
+    if (!t) return;
+    tryLogin(t);
+  });
+  tokenInput.addEventListener('keydown', function(ev){
+    if (ev.key === 'Enter') loginBtn.click();
+  });
+
+  var remembered = getToken();
+  if (remembered) tryLogin(remembered);
+})();
+</script>
+</body>
+</html>

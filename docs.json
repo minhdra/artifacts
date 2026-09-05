@@ -1,0 +1,34 @@
+[
+  {
+    "slug": "module-nhiem-vu",
+    "icon": "🏗️",
+    "category": "XDHY",
+    "title": "Module Nhiệm vụ",
+    "desc": "Tài liệu chức năng + hướng dẫn kiểm thử cho tester & BA",
+    "date": "2026-09-04"
+  },
+  {
+    "slug": "tai-khoan-test",
+    "icon": "🔑",
+    "category": "XDHY",
+    "title": "Tài khoản test",
+    "desc": "18 tài khoản test kèm kịch bản kiểm thử phân quyền theo trọng số",
+    "date": "2026-09-04"
+  },
+  {
+    "slug": "sso-conshy-ke-hoach",
+    "icon": "🧩",
+    "category": "XDHY",
+    "title": "Kế hoạch SSO ConsHY",
+    "desc": "Việc từng app phải làm + kiến trúc & luồng xử lý, kèm sơ đồ chi tiết",
+    "date": "2026-09-05"
+  },
+  {
+    "slug": "sso-db-thuc-te",
+    "icon": "🔒",
+    "category": "XDHY",
+    "title": "DB thực tế ConsHY",
+    "desc": "Đối chiếu kế hoạch SSO với schema Postgres thật",
+    "date": "2026-09-05"
+  }
+]

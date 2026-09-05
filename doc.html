@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đang tải tài liệu…</title>
+<style>
+  :root{ --paper:#f5f7f9; --surface:#ffffff; --ink:#16222c; --ink-soft:#556775; --line:#dde4ea; --accent:#2563a6; --accent-ink:#fff; --err:#b3432d; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --paper:#0e141a; --surface:#151d24; --ink:#e7edf2; --ink-soft:#9fb0bd; --line:#263140; --accent:#6ba3dd; --accent-ink:#0e141a; --err:#e08b76; }
+  }
+  :root[data-theme="dark"]{ --paper:#0e141a; --surface:#151d24; --ink:#e7edf2; --ink-soft:#9fb0bd; --line:#263140; --accent:#6ba3dd; --accent-ink:#0e141a; --err:#e08b76; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans','Arial',system-ui,sans-serif; }
+  #state{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:36px 32px; max-width:380px; width:100%; box-shadow:0 8px 24px rgba(0,0,0,.06); text-align:center; }
+  .card .glyph{ font-size:26px; }
+  .card h1{ font-family:'Be Vietnam Pro','Arial',sans-serif; font-size:19px; margin:10px 0 6px; }
+  .card p{ color:var(--ink-soft); font-size:13.5px; margin:0 0 18px; line-height:1.5; }
+  input{ width:100%; font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:.3em; text-align:center; padding:12px; border-radius:8px; border:1px solid var(--line); background:var(--paper); color:var(--ink); }
+  input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  button{ width:100%; margin-top:12px; padding:11px; border:none; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:14px; cursor:pointer; }
+  a.back{ display:inline-block; margin-top:16px; font-size:12.5px; color:var(--ink-soft); }
+  .err{ color:var(--err); font-size:12.5px; margin-top:10px; min-height:1.2em; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="state">
+    <div class="card"><div class="glyph">⏳</div><h1>Đang tải…</h1></div>
+  </div>
+
+<script>
+(function(){
+  var slug = new URLSearchParams(location.search).get('slug') || '';
+  var stateEl = document.getElementById('state');
+
+  function showCard(html){
+    stateEl.innerHTML = '<div class="card">' + html + '</div>';
+  }
+
+  function reveal(html){
+    document.open();
+    document.write(html);
+    document.close();
+  }
+
+  function showGate(meta){
+    var title = meta ? meta.title : 'Tài liệu';
+    var desc = meta ? meta.desc : '';
+    showCard(
+      '<div class="glyph">🔒</div>' +
+      '<h1>' + title + '</h1>' +
+      '<p>' + desc + (desc ? '<br>' : '') + 'Cần mật khẩu để xem.</p>' +
+      '<form id="gform">' +
+        '<input id="pass" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="••••••" autofocus>' +
+        '<button type="submit">Mở tài liệu</button>' +
+        '<div class="err" id="err"></div>' +
+      '</form>' +
+      '<a class="back" href="index.html">← Về thư viện</a>'
+    );
+    document.getElementById('gform').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var passcode = document.getElementById('pass').value.trim();
+      if (!passcode) return;
+      fetch('/api/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: slug, passcode: passcode })
+      }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+        .then(function(res){
+          if (res.ok) { load(); }
+          else {
+            document.getElementById('err').textContent = res.body.message || 'Sai mật khẩu';
+            document.getElementById('pass').select();
+          }
+        })
+        .catch(function(){
+          document.getElementById('err').textContent = 'Lỗi kết nối, thử lại.';
+        });
+    });
+  }
+
+  function showNotFound(){
+    showCard('<div class="glyph">🔎</div><h1>Không tìm thấy</h1><p>Tài liệu không tồn tại hoặc đã bị gỡ.</p><a class="back" href="index.html">← Về thư viện</a>');
+  }
+
+  function showError(){
+    showCard('<div class="glyph">⚠️</div><h1>Có lỗi xảy ra</h1><p>Thử tải lại trang.</p><a class="back" href="index.html">← Về thư viện</a>');
+  }
+
+  function load(){
+    if (!slug) { showNotFound(); return; }
+    fetch('/api/doc?slug=' + encodeURIComponent(slug))
+      .then(function(r){
+        if (r.status === 200) return r.text().then(reveal);
+        if (r.status === 401) {
+          fetch('docs.json').then(function(rr){ return rr.json(); }).then(function(list){
+            var meta = list.find(function(it){ return it.slug === slug; });
+            showGate(meta);
+          }).catch(function(){ showGate(null); });
+          return;
+        }
+        if (r.status === 404) { showNotFound(); return; }
+        showError();
+      })
+      .catch(showError);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

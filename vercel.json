@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/doc.js": {
+      "includeFiles": "api/_content/**"
+    }
+  }
+}
