@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getVisibilityMap } = require('./_lib/edgeConfig');
-const { verify, parseCookies } = require('./_lib/cookies');
+const { isAdmin } = require('./_lib/auth');
 
 module.exports = async (req, res) => {
   const rawSlug = Array.isArray(req.query.slug) ? req.query.slug[0] : req.query.slug;
@@ -14,18 +14,12 @@ module.exports = async (req, res) => {
   }
 
   const map = await getVisibilityMap();
-  const visibility = map[slug] || 'private';
+  const visibility = map[slug] || 'visible';
 
-  if (visibility === 'private') {
-    const secret = process.env.COOKIE_SECRET;
-    if (!secret) {
-      return res.status(500).json({ message: 'Server chưa cấu hình COOKIE_SECRET' });
-    }
-    const cookies = parseCookies(req.headers.cookie);
-    const payload = verify(cookies.doc_session, secret);
-    if (!payload) {
-      return res.status(401).json({ locked: true });
-    }
+  // Tài liệu ẩn: chỉ admin mới mở được. Trả 404 (không phải 401) để không lộ
+  // sự tồn tại của tài liệu với người ngoài.
+  if (visibility === 'hidden' && !isAdmin(req)) {
+    return res.status(404).json({ message: 'Không tìm thấy tài liệu' });
   }
 
   const html = fs.readFileSync(filePath, 'utf8');

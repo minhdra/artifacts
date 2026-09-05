@@ -111,7 +111,7 @@
       <a class="admin-link" href="admin.html">Quản trị →</a>
     </div>
     <h1 class="title">Thư viện tài liệu</h1>
-    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu. Mỗi mục tự chứa 1 trang, mở trực tiếp không cần tải về. Mục khoá 🔒 cần mật khẩu mới xem được.</p>
+    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu. Mỗi mục tự chứa 1 trang, mở trực tiếp không cần tải về. Mục ẩn 👁 chỉ hiện với máy đã đăng nhập admin.</p>
 
     <div class="filters" id="filters"></div>
     <div id="empty" class="empty" style="display:none">Không có tài liệu nào trong nhóm này.</div>
@@ -126,6 +126,11 @@
     var emptyEl = document.getElementById("empty");
     var activeCategory = "all";
     var items = [];
+    var isAdmin = false;
+
+    function adminToken(){
+      try { return localStorage.getItem("xdhy_admin_token") || ""; } catch(e) { return ""; }
+    }
 
     function slugify(str){
       return str
@@ -182,7 +187,7 @@
           var a = document.createElement("a");
           a.href = "doc.html?slug=" + encodeURIComponent(it.slug);
           a.className = "card";
-          var lock = it.visibility === "private" ? '<span class="lock" title="Cần mật khẩu">🔒</span>' : "";
+          var lock = it.visibility === "hidden" ? '<span class="lock" title="Ẩn — chỉ admin thấy">👁</span>' : "";
           a.innerHTML =
             '<div class="icon">' + it.icon + '</div>' +
             '<div class="body"><h2><span class="tag">' + it.category + '</span>' + it.title + lock + '</h2><p>' + it.desc + '</p></div>' +
@@ -229,15 +234,21 @@
       });
     }
 
+    var token = adminToken();
     Promise.all([
       fetch("docs.json").then(function(r){ return r.json(); }),
-      fetch("/api/visibility").then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("/api/visibility", {
+        headers: token ? { Authorization: "Bearer " + token } : {}
+      }).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(results){
       var registry = results[0];
-      var visibilityMap = results[1];
-      items = registry.map(function(it){
-        return Object.assign({}, it, { visibility: visibilityMap[it.slug] || "public" });
-      });
+      var visibilityMap = (results[1] && results[1].map) || {};
+      isAdmin = !!(results[1] && results[1].isAdmin);
+      items = registry
+        .map(function(it){
+          return Object.assign({}, it, { visibility: visibilityMap[it.slug] === "hidden" ? "hidden" : "visible" });
+        })
+        .filter(function(it){ return isAdmin || it.visibility !== "hidden"; });
       setupFilters();
       render();
       document.getElementById("foot").textContent =

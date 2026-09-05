@@ -56,8 +56,8 @@
     border:1px solid var(--line); background:var(--surface-2); color:var(--ink-soft); font-family:inherit; font-size:11.5px; font-weight:600;
     padding:6px 12px; border-radius:999px; cursor:pointer;
   }
-  .switch button.public.active{ background:var(--good); border-color:var(--good); color:#fff; }
-  .switch button.private.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .switch button.show.active{ background:var(--good); border-color:var(--good); color:#fff; }
+  .switch button.hide.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
   .toolbar{ margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
   .toolbar a{ font-size:12.5px; color:var(--ink-faint); }
   #setupNote{ margin-top:24px; padding:14px 16px; border:1px dashed var(--line); border-radius:var(--radius); font-size:12.5px; color:var(--ink-faint); display:none; }
@@ -69,7 +69,7 @@
 <div class="wrap">
   <span class="eyebrow">XDHY · Kho lưu trữ cá nhân </span>
   <h1 class="title">Quản trị thư viện</h1>
-  <p class="lead">Đánh dấu từng tài liệu là public (ai có link cũng xem được) hoặc private (cần mật khẩu). Lưu ngay, không cần deploy lại.</p>
+  <p class="lead">Đánh dấu từng tài liệu là hiện (ai có link cũng xem được) hoặc ẩn (chỉ máy đã đăng nhập admin mới thấy và mở được). Lưu ngay, không cần deploy lại.</p>
 
   <div id="login">
     <div class="login-card">
@@ -93,6 +93,7 @@
 <script>
 (function(){
   var STORAGE_KEY = 'xdhy_admin_token';
+  var VIS = { on: 'visible', off: 'hidden' };
   var tokenInput = document.getElementById('tokenInput');
   var loginBtn = document.getElementById('loginBtn');
   var loginMsg = document.getElementById('loginMsg');
@@ -102,24 +103,24 @@
   var setupNoteEl = document.getElementById('setupNote');
 
   function getToken(){
-    try { return sessionStorage.getItem(STORAGE_KEY) || ''; } catch(e) { return ''; }
+    try { return localStorage.getItem(STORAGE_KEY) || ''; } catch(e) { return ''; }
   }
   function setToken(t){
-    try { sessionStorage.setItem(STORAGE_KEY, t); } catch(e) {}
+    try { localStorage.setItem(STORAGE_KEY, t); } catch(e) {}
   }
 
   function renderList(registry, visibilityMap){
     listEl.innerHTML = '';
     registry.forEach(function(it){
-      var vis = visibilityMap[it.slug] || 'public';
+      var vis = visibilityMap[it.slug] === VIS.off ? VIS.off : VIS.on;
       var row = document.createElement('div');
       row.className = 'row';
       row.innerHTML =
         '<div class="icon">' + it.icon + '</div>' +
         '<div class="body"><h2>' + it.title + '</h2><p>' + it.slug + '</p></div>' +
         '<div class="switch">' +
-          '<button data-vis="public" class="public' + (vis==='public'?' active':'') + '">Public</button>' +
-          '<button data-vis="private" class="private' + (vis==='private'?' active':'') + '">Private</button>' +
+          '<button data-vis="' + VIS.on + '" class="show' + (vis===VIS.on?' active':'') + '">Hiện</button>' +
+          '<button data-vis="' + VIS.off + '" class="hide' + (vis===VIS.off?' active':'') + '">Ẩn</button>' +
         '</div>';
       row.querySelectorAll('button').forEach(function(btn){
         btn.addEventListener('click', function(){
@@ -147,7 +148,7 @@
           setupNoteEl.style.display = 'none';
         } else {
           setupNoteEl.style.display = 'block';
-          setupNoteEl.textContent = 'Không lưu được: ' + (res.body.message || 'lỗi không rõ') + ' — xem hướng dẫn cấu hình EDGE_CONFIG_ID/VERCEL_API_TOKEN.';
+          setupNoteEl.textContent = 'Không lưu được: ' + (res.body.message || 'lỗi không rõ') + ' — xem hướng dẫn cấu hình GLOBAL_CONFIG_ID/VERCEL_API_TOKEN.';
         }
       })
       .catch(function(){
@@ -159,11 +160,13 @@
   function loadPanel(){
     Promise.all([
       fetch('docs.json').then(function(r){ return r.json(); }),
-      fetch('/api/visibility').then(function(r){ return r.json(); })
+      fetch('/api/visibility', {
+        headers: { Authorization: 'Bearer ' + getToken() }
+      }).then(function(r){ return r.json(); })
     ]).then(function(res){
       loginEl.style.display = 'none';
       panelEl.style.display = 'block';
-      renderList(res[0], res[1]);
+      renderList(res[0], (res[1] && res[1].map) || {});
     });
   }
 

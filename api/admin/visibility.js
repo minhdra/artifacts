@@ -1,4 +1,5 @@
 const { setVisibility } = require('../_lib/edgeConfig');
+const { isAdmin } = require('../_lib/auth');
 
 function readBody(req) {
   if (!req.body) return {};
@@ -19,13 +20,12 @@ module.exports = async (req, res) => {
     return res.status(500).json({ message: 'Server chưa cấu hình ADMIN_TOKEN' });
   }
 
-  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token || token !== process.env.ADMIN_TOKEN) {
+  if (!isAdmin(req)) {
     return res.status(401).json({ message: 'Sai admin token' });
   }
 
   const { slug, visibility } = readBody(req);
-  if (!slug || !['public', 'private'].includes(visibility)) {
+  if (!slug || !['visible', 'hidden'].includes(visibility)) {
     return res.status(400).json({ message: 'Thiếu slug hoặc visibility không hợp lệ' });
   }
 

@@ -46,40 +46,8 @@
     document.close();
   }
 
-  function showGate(meta){
-    var title = meta ? meta.title : 'Tài liệu';
-    var desc = meta ? meta.desc : '';
-    showCard(
-      '<div class="glyph">🔒</div>' +
-      '<h1>' + title + '</h1>' +
-      '<p>' + desc + (desc ? '<br>' : '') + 'Cần mật khẩu để xem.</p>' +
-      '<form id="gform">' +
-        '<input id="pass" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="••••••" autofocus>' +
-        '<button type="submit">Mở tài liệu</button>' +
-        '<div class="err" id="err"></div>' +
-      '</form>' +
-      '<a class="back" href="index.html">← Về thư viện</a>'
-    );
-    document.getElementById('gform').addEventListener('submit', function(ev){
-      ev.preventDefault();
-      var passcode = document.getElementById('pass').value.trim();
-      if (!passcode) return;
-      fetch('/api/unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: slug, passcode: passcode })
-      }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
-        .then(function(res){
-          if (res.ok) { load(); }
-          else {
-            document.getElementById('err').textContent = res.body.message || 'Sai mật khẩu';
-            document.getElementById('pass').select();
-          }
-        })
-        .catch(function(){
-          document.getElementById('err').textContent = 'Lỗi kết nối, thử lại.';
-        });
-    });
+  function adminToken(){
+    try { return localStorage.getItem('xdhy_admin_token') || ''; } catch(e) { return ''; }
   }
 
   function showNotFound(){
@@ -92,16 +60,13 @@
 
   function load(){
     if (!slug) { showNotFound(); return; }
-    fetch('/api/doc?slug=' + encodeURIComponent(slug))
+    var token = adminToken();
+    fetch('/api/doc?slug=' + encodeURIComponent(slug), {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    })
       .then(function(r){
         if (r.status === 200) return r.text().then(reveal);
-        if (r.status === 401) {
-          fetch('docs.json').then(function(rr){ return rr.json(); }).then(function(list){
-            var meta = list.find(function(it){ return it.slug === slug; });
-            showGate(meta);
-          }).catch(function(){ showGate(null); });
-          return;
-        }
+        // Tài liệu ẩn với người không phải admin trả về 404 (cố ý không lộ).
         if (r.status === 404) { showNotFound(); return; }
         showError();
       })
