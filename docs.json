@@ -19,7 +19,7 @@
     "slug": "sso-conshy-ke-hoach",
     "icon": "🧩",
     "category": "XDHY",
-    "title": "SSO ConsHY — trạng thái thực tế",
+    "title": "SSO XDHY — trạng thái thực tế",
     "desc": "Đã build + test end-to-end trong sandbox: kiến trúc, luồng đăng nhập/quên mật khẩu, checklist trước khi lên production",
     "date": "2026-09-05"
   },
@@ -27,7 +27,7 @@
     "slug": "sso-db-thuc-te",
     "icon": "🔒",
     "category": "XDHY",
-    "title": "DB thực tế ConsHY",
+    "title": "DB thực tế XDHY",
     "desc": "Đối chiếu kế hoạch SSO với schema Postgres thật",
     "date": "2026-09-05"
   },
@@ -36,7 +36,7 @@
     "icon": "🔌",
     "category": "XDHY",
     "title": "Tích hợp SSO cho app khác",
-    "desc": "Hướng dẫn từng bước cho chủ app khác (web + mobile) kết nối vào SSO ConsHY",
+    "desc": "Hướng dẫn từng bước cho chủ app khác (web + mobile) kết nối vào SSO XDHY",
     "date": "2026-09-05"
   }
 ]

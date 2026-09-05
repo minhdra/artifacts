@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tích hợp SSO ConsHY</title>
+<title>Tích hợp SSO XDHY</title>
 <style>
   :root{
     --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
@@ -102,13 +102,13 @@
 <body>
 <div class="wrap">
 
-  <span class="eyebrow">Hướng dẫn tích hợp · Hệ thống ConsHY (XDHY)</span>
+  <span class="eyebrow">Hướng dẫn tích hợp · Hệ thống XDHY</span>
   <h1 class="title">Tích hợp SSO cho app khác</h1>
   <p class="lead">Dành cho chủ app khác (chat, meeting, app mới sau này) muốn dùng chung đăng nhập với build-web thay vì tự làm auth riêng. Viết theo từng bước, kèm code mẫu thật lấy từ api-sso/api-gateway/api-task-management hiện có.</p>
   <div class="metabar">
     <span>Cập nhật 05/09/2026</span>
     <span>Phần web: đã chạy thật (tham khảo build-web)</span>
-    <span>Phần mobile: đề xuất — CHƯA có endpoint tương ứng</span>
+    <span>Phần mobile: dùng chính các endpoint hiện có, không cần thêm API</span>
   </div>
 
   <nav class="toc">
@@ -208,62 +208,65 @@ apiClient.interceptors.response.use(null, async (error) => {
   </section>
 
   <section id="mobile">
-    <div class="docmark"><span class="num">3</span><h2>Tích hợp app mobile <span class="tag pending">đề xuất — chưa build</span></h2></div>
-    <p class="lede"><b>Toàn bộ mục này là thiết kế đề xuất, api-sso hiện tại KHÔNG có endpoint nào phục vụ mobile.</b> Ghi lại để chủ app mobile biết trước hướng đi và những gì cần xin đội SSO làm thêm — không phải hướng dẫn tích hợp ngay được.</p>
+    <div class="docmark"><span class="num">3</span><h2>Tích hợp app mobile</h2></div>
+    <p class="lede">Mobile không dùng lại được cơ chế cookie tự động của trình duyệt, nhưng <b>không cần endpoint mới</b> — dùng đúng các endpoint như web, app tự đọc token từ response rồi tự đính vào request sau. api-sso đã hỗ trợ sẵn: <code>/me</code> nhận <code>Authorization: Bearer</code>, còn <code>/refresh</code>/<code>/logout</code> đọc token từ header <code>Cookie</code> (do <code>cookie-parser</code> parse) nên client tự dựng header đó được.</p>
 
-    <h3>Vì sao không dùng lại nguyên xi cách của web</h3>
-    <ul class="plain">
-      <li>Cookie <code>httpOnly</code> là cơ chế của trình duyệt — app native (Swift/Kotlin/React Native không dùng WebView cho toàn bộ app) không có "cookie jar dùng chung" giữa các domain theo cách browser có.</li>
-      <li>Không nên nhúng WebView để giữ session qua cookie — trải nghiệm kém, và nhiều hệ thống định danh (Google, Apple) khuyến cáo không đăng nhập trong WebView vì không cho người dùng thấy rõ domain thật đang nhập mật khẩu.</li>
-    </ul>
-
-    <h3>Mẫu hình đề xuất: mở trình duyệt hệ thống + đổi code lấy token</h3>
     <div class="diagram">
       <pre class="mermaid">
 sequenceDiagram
   actor U as Người dùng
   participant App as App mobile
-  participant Browser as Safari/Chrome hệ thống
-  participant SW as sso-web
-  participant SSO as api-sso (endpoint MỚI, chưa có)
+  participant GW as api-gateway
+  participant SSO as api-sso
+  participant KC as Keychain / Keystore
 
-  U->>App: Bấm "Đăng nhập"
-  App->>Browser: Mở sso-web/login?client=mobile (SFSafariViewController / Custom Tabs)
-  U->>SW: Đăng nhập bình thường (tài khoản/mật khẩu)
-  SW->>SSO: POST /login (như luồng web)
-  SSO-->>SW: Set-Cookie (dùng nội bộ cho chính sso-web)
-  SW->>SSO: Sinh 1 "authorization code" dùng 1 lần, hạn ngắn (~60s)
-  SW-->>Browser: Redirect sang custom URL scheme<br/>vd conshy://auth-callback?code=...
-  Browser-->>App: Hệ điều hành mở lại app kèm code
-  App->>SSO: POST /mobile/token-exchange {code}
-  SSO-->>App: {access_token, refresh_token} dạng JSON (KHÔNG set cookie)
-  App->>App: Lưu 2 token vào Keychain (iOS) / Keystore (Android)
+  U->>App: Nhập tài khoản/email/sđt + mật khẩu (form native của app)
+  App->>GW: POST /api/login {username, password, remember:true}
+  GW->>SSO: forward
+  SSO-->>App: 200 {user} + header Set-Cookie: access_token=... ; refresh_token=...
+  App->>App: Đọc 2 giá trị token từ header Set-Cookie
+  App->>KC: Lưu access_token + refresh_token
+  Note over App,GW: Request nghiệp vụ về sau
+  App->>GW: GET /api/... , header Authorization: Bearer &lt;access_token&gt;
+  GW-->>App: 200 (hoặc 401 nếu access token hết hạn)
+  App->>GW: POST /api/refresh , header Cookie: refresh_token=&lt;...&gt;
+  GW->>SSO: forward
+  SSO-->>App: 200 + Set-Cookie: access_token=... (mới)
+  App->>KC: Ghi đè access_token mới
       </pre>
-      <p class="cap">Giống mô hình Authorization Code phổ biến ở OAuth2 cho ứng dụng native — code đổi 1 lần, sống ngắn hạn, tránh lộ token thật qua URL scheme (URL scheme không mã hoá, log lại được ở hệ điều hành).</p>
+      <p class="cap">Không WebView, không custom URL scheme. App tự đóng vai "cookie jar": đọc token ở <code>Set-Cookie</code>, cất an toàn, tự gửi lại.</p>
     </div>
 
-    <h3>Việc cần xin đội SSO làm thêm (chưa có trong api-sso hôm nay)</h3>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Việc</th><th>Vì sao cần</th></tr></thead>
-        <tbody>
-          <tr><td>Endpoint <code>POST /mobile/token-exchange</code></td><td>Đổi authorization code lấy access/refresh token dạng JSON, không qua cookie</td></tr>
-          <tr><td><code>/refresh</code> nhận thêm refresh token qua body/header</td><td>Hiện tại <code>/refresh</code> chỉ đọc từ cookie (<code>req.cookies?.refresh_token</code>) — mobile không có cookie, cần app tự gửi refresh token trong <code>Authorization</code> header hoặc body</td></tr>
-          <tr><td>Đăng ký custom URL scheme của từng app mobile</td><td>sso-web cần biết scheme nào được phép redirect tới (tương tự whitelist domain redirect ở bản web) — tránh app giả mạo nhận code</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <h3>Từng bước phía app</h3>
+    <ol class="steps">
+      <li>
+        <span class="stitle">Đăng nhập</span>
+        <code>POST /api/login</code> với JSON <code>{username, password, remember: true}</code> (<code>remember:true</code> để refresh token sống 30 ngày). Response 200: body là thông tin user; 2 token nằm ở header <code>Set-Cookie</code> (2 dòng <code>access_token=...</code>, <code>refresh_token=...</code>). Đọc <b>giá trị</b> token, bỏ qua các thuộc tính <code>Path</code>/<code>HttpOnly</code>/<code>Max-Age</code>.
+      </li>
+      <li>
+        <span class="stitle">Cất token</span>
+        Lưu 2 token vào <b>Keychain</b> (iOS) / <b>Android Keystore</b> (qua <code>EncryptedSharedPreferences</code>) — không để ở <code>UserDefaults</code>/<code>SharedPreferences</code> thường.
+      </li>
+      <li>
+        <span class="stitle">Gọi API nghiệp vụ</span>
+        Gắn header <code>Authorization: Bearer &lt;access_token&gt;</code> cho mọi request qua gateway. Gateway và middleware <code>authenticate</code> của các service đã đọc theo thứ tự "cookie trước, header <code>Authorization</code> sau" (xem <code>authMiddleware.ts</code>) nên không cần đổi gì phía service.
+      </li>
+      <li>
+        <span class="stitle">Access token hết hạn (401)</span>
+        <code>POST /api/refresh</code> với header <code>Cookie: refresh_token=&lt;refresh_token&gt;</code> (tự dựng chuỗi, không phải cookie thật của OS). Response 200 kèm <code>Set-Cookie: access_token=...</code> mới — ghi đè access token đang lưu rồi gọi lại request gốc. Nếu <code>/refresh</code> trả 401 → refresh token bị thu hồi/hết hạn → xoá token, quay về màn đăng nhập.
+      </li>
+      <li>
+        <span class="stitle">Đăng xuất</span>
+        <code>POST /api/logout</code> với header <code>Cookie: refresh_token=&lt;...&gt;</code> để service thu hồi đúng session trong DB, rồi xoá cả 2 token khỏi Keychain/Keystore.
+      </li>
+      <li>
+        <span class="stitle">Quên mật khẩu</span>
+        Gọi <code>POST /api/forgot-password {email}</code> — người dùng nhận email, bấm link mở <code>sso-web</code> trong trình duyệt hệ thống để đổi mật khẩu (app không cần xử lý màn đổi mật khẩu).
+      </li>
+    </ol>
 
-    <h3>Phía app mobile cần làm</h3>
-    <ul class="plain">
-      <li>Lưu token bằng <b>Keychain</b> (iOS)/<b>Android Keystore</b> (qua <code>EncryptedSharedPreferences</code>) — không lưu ở <code>UserDefaults</code>/<code>SharedPreferences</code> thường (đọc được nếu máy bị root/jailbreak).</li>
-      <li>Mọi request API gắn <code>Authorization: Bearer &lt;access_token&gt;</code> — endpoint hiện tại (<code>/me</code>, middleware <code>authenticate</code> của api-task-management, gateway) đã sẵn sàng nhận theo header này (đọc cookie trước, header sau, xem <code>authController.me</code>/<code>authMiddleware.ts</code>), không cần đổi gì thêm ở phía service cho việc verify.</li>
-      <li>Access token hết hạn (15 phút mặc định) → gọi lại endpoint refresh mới (mục trên) bằng refresh token đang lưu, không phải đăng nhập lại từ đầu.</li>
-      <li>Đăng xuất: gọi <code>/logout</code> kèm token qua header (không cookie) để service thu hồi đúng session, rồi xoá token khỏi Keychain/Keystore.</li>
-    </ul>
-
-    <div class="callout bad">
-      <b>Chưa làm được ngay:</b> nếu app mobile cần tích hợp trước khi các endpoint trên có, giải pháp tạm là gọi thẳng <code>/api/login</code> bằng JSON (không dùng cookie, đọc access/refresh token thẳng từ response body <code>Set-Cookie</code> — cần backend đổi để cũng trả token trong JSON body, hiện tại <code>login</code> chỉ trả về <code>result.user</code>) — nhưng cách này không tách được "web" và "mobile client" như thiết kế trên, chỉ nên coi là giải pháp tạm và cần trao đổi trước với đội SSO.
+    <div class="callout warn">
+      <b>Lưu ý HTTPS:</b> ở production cookie set kèm <code>Secure</code> — chỉ có nghĩa với trình duyệt; client mobile tự quản token thì bỏ qua, nhưng vẫn phải gọi gateway qua HTTPS để token không đi qua mạng ở dạng rõ. Access token mặc định sống 15 phút (hoặc 1 ngày nếu <code>remember:true</code>) — đừng hard-code, cứ bắt 401 rồi refresh.
     </div>
   </section>
 
@@ -286,7 +289,7 @@ sequenceDiagram
     </div>
   </section>
 
-  <footer>XDHY · ConsHY · Hướng dẫn tích hợp · Phần web đã kiểm thử thật, phần mobile là đề xuất thiết kế chưa triển khai</footer>
+  <footer>XDHY · Hướng dẫn tích hợp SSO cho app khác · web + mobile</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SSO ConsHY — Trạng thái thực tế</title>
+<title>SSO XDHY — Trạng thái thực tế</title>
 <style>
   :root{
     --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
@@ -106,8 +106,8 @@
 <body>
 <div class="wrap">
 
-  <span class="eyebrow">Tài liệu kỹ thuật · Hệ thống ConsHY (XDHY)</span>
-  <h1 class="title">SSO ConsHY — trạng thái thực tế (as-built)</h1>
+  <span class="eyebrow">Tài liệu kỹ thuật · Hệ thống XDHY</span>
+  <h1 class="title">SSO XDHY — trạng thái thực tế (as-built)</h1>
   <p class="lead">Đã dựng xong và kiểm thử end-to-end trong sandbox Docker riêng (không đụng DB/hạ tầng thật). Tài liệu này thay thế bản kế hoạch trước — ghi lại đúng những gì đã chạy được, không phải dự định.</p>
   <div class="metabar">
     <span>Cập nhật 05/09/2026</span>
@@ -160,9 +160,9 @@
 
       <div class="appcard">
         <div class="name">api-core</div>
-        <span class="role">Vẫn giữ user/role/branch/department — không còn giữ auth</span>
+        <span class="role">Giữ nguyên — không đổi 1 dòng code</span>
         <ol>
-          <li><span class="phasechip">Xong</span><span>Route <code>login/refresh/logout/me</code> cũ trả HTTP 410, kèm thông tin trỏ sang api-sso — không xoá hẳn để caller cũ nhận lỗi rõ ràng thay vì 404 mơ hồ.</span></li>
+          <li><span class="phasechip">Xong</span><span>Cố ý <b>không sửa</b> api-core: route <code>login/refresh/logout/me</code> cũ vẫn còn nguyên (vẫn ký HS256 bằng <code>JWT_SECRET</code>), chỉ là không còn ai gọi tới — build-web đã chuyển hẳn sang api-sso. Để nguyên cho đỡ rủi ro deploy.</span></li>
           <li><span class="phasechip">Xong</span><span>Giữ nguyên toàn bộ CRUD người dùng/vai trò/quyền — api-sso chỉ đọc lại qua stored procedure có sẵn.</span></li>
         </ol>
       </div>
@@ -173,6 +173,7 @@
         <ol>
           <li><span class="phasechip">Xong</span><span>Verify JWT qua JWKS (<code>jwks-rsa</code>, <code>JWT_JWKS_URI</code> bắt buộc) thay vì so khớp secret chung.</span></li>
           <li><span class="phasechip">Xong</span><span>6 đường tắt rewrite sang <code>/api-sso/*</code>: <code>/api/login</code>, <code>/refresh</code>, <code>/logout</code>, <code>/me</code>, <code>/forgot-password</code>, <code>/reset-password-confirm</code>.</span></li>
+          <li><span class="phasechip">Xong</span><span>Mở đường công khai (KHÔNG verify token) cho Swagger/OpenAPI: <code>/api/docs/api-core/</code> và <code>/api/docs/api-task/</code> (tiền tố riêng, không đè route <code>/api/api-core/*</code>). Mở bằng URL có <code>/</code> cuối.</span></li>
           <li><span class="phasechip">Xong</span><span>Nguyên tắc hạ tầng đã áp dụng: chỉ app frontend (build-web, sso-web) và chính api-gateway mới publish port ra ngoài — api-core/api-task-management/api-sso chỉ <code>expose</code> nội bộ.</span></li>
           <li><span class="phasechip todo">Chưa</span><span>Route cho chat/meeting vẫn chỉ là khung khai báo sẵn trong config, chưa có service thật để nối.</span></li>
         </ol>
@@ -225,7 +226,7 @@ flowchart TB
   GW["api-gateway<br/>verify JWT qua JWKS<br/>CORS riêng theo từng origin (SSO_ORIGIN ≠ CORS_ORIGIN)"]
 
   subgraph Internal["Chỉ expose nội bộ — KHÔNG publish port ra internet"]
-    APICORE["api-core<br/>user/role CRUD · login trả 410"]
+    APICORE["api-core<br/>user/role CRUD · giữ nguyên, không sửa"]
     APITASK["api-task-management<br/>công trình · task"]
     APISSO["api-sso (MỚI)<br/>login · refresh · logout · me<br/>forgot-password · JWKS"]
   end
@@ -315,9 +316,9 @@ sequenceDiagram
 
   <section id="checklist">
     <div class="docmark"><span class="num">Quan trọng</span><h2>Checklist trước khi lên production</h2></div>
-    <p class="lede">Toàn bộ việc trên làm trong sandbox tách biệt (network/DB/domain riêng, không đụng hệ thống thật). Nhưng code đã sửa nằm trên <b>nhánh nguồn dùng chung</b> với production (<code>api-core</code>, <code>api-task-management</code>, <code>api-gateway</code>) — nếu deploy nhánh này lên thật mà bỏ qua các bước dưới, hệ thống thật sẽ hỏng ngay.</p>
+    <p class="lede">Toàn bộ việc trên làm trong sandbox tách biệt (network/DB/domain riêng, không đụng hệ thống thật). <code>api-core</code> đã được để nguyên (không sửa), nhưng code đã đổi ở <code>api-task-management</code> và <code>api-gateway</code> nằm trên <b>nhánh nguồn dùng chung</b> với production — deploy nhánh này lên thật mà bỏ qua các bước dưới, đăng nhập thật sẽ hỏng.</p>
     <div class="callout warn">
-      <b>Rủi ro cụ thể:</b> <code>api-core</code> thật sẽ trả 410 cho mọi request login/refresh/logout/me (vì code đã đổi), trong khi <code>api-sso</code>/<code>api-gateway</code>/<code>api-task-management</code> thật lại chưa có biến môi trường <code>JWT_JWKS_URI</code> — build-web thật sẽ không đăng nhập được cho tới khi hoàn tất đủ các bước dưới.
+      <b>Rủi ro cụ thể:</b> <code>api-gateway</code> và <code>api-task-management</code> thật đã chuyển sang verify token qua JWKS — thiếu biến <code>JWT_JWKS_URI</code> thì 2 service này <b>không start được</b> (chặn bằng <code>requireEnv</code>). Và nếu chưa deploy <code>api-sso</code> + <code>sso-web</code> thì build-web thật không có nơi đăng nhập.
     </div>
     <ol class="steps">
       <li>Chạy 3 migration <code>.sql</code> của <code>api-sso</code> (<code>auth_session</code>, <code>auth_refresh_token</code>, <code>password_reset_token</code>) lên <code>build_management</code> thật — đã test idempotent ở sandbox, chạy đúng file, không viết lại tay.</li>
@@ -326,11 +327,11 @@ sequenceDiagram
       <li>Cấu hình domain/CORS thật cho sso-web (<code>SSO_ORIGIN</code> ở gateway thật) và domain cookie chung (<code>COOKIE_DOMAIN</code>) — khác domain OrbStack chỉ dùng cho sandbox.</li>
       <li>Deploy <code>sso-web</code> như 1 app frontend thật (build image, publish port, domain riêng) — chưa có trong hạ tầng production hiện tại.</li>
       <li>Cấu hình SMTP thật cho api-sso (hiện sandbox dùng thông tin giả) để email quên mật khẩu gửi được.</li>
-      <li>Deploy đồng thời tất cả các thay đổi trên trong 1 lượt — không deploy <code>api-core</code>/<code>api-task-management</code>/<code>api-gateway</code> (đã đổi code) mà thiếu <code>api-sso</code>, sẽ gây gián đoạn đăng nhập thật ngay lập tức.</li>
+      <li>Deploy đồng thời trong 1 lượt: <code>api-sso</code> + <code>sso-web</code> mới, cùng <code>api-task-management</code>/<code>api-gateway</code> (đã đổi verify) và build-web. Không deploy 2 service đã đổi mà thiếu <code>api-sso</code>.</li>
     </ol>
   </section>
 
-  <footer>XDHY · ConsHY · Đã build + test trong sandbox (docker-compose.sso-sandbox.yml) · CHƯA deploy production</footer>
+  <footer>XDHY · Đã build + test trong sandbox (docker-compose.sso-sandbox.yml) · CHƯA deploy production</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
