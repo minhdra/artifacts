@@ -1,109 +1,307 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thư viện tài liệu</title>
-<style>
-  :root{
-    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
-    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
-    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
-    --radius:10px; --radius-lg:16px;
-    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
-      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
-      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
-      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thư viện tài liệu</title>
+  <style>
+    :root {
+      --paper: #f5f7f9;
+      --surface: #ffffff;
+      --surface-2: #eef2f5;
+      --ink: #16222c;
+      --ink-soft: #556775;
+      --ink-faint: #8a97a3;
+      --line: #dde4ea;
+      --accent: #2563a6;
+      --accent-ink: #ffffff;
+      --accent-soft: #e7eff8;
+      --radius: 10px;
+      --radius-lg: 16px;
+      --shadow: 0 1px 2px rgba(22, 34, 44, .04), 0 8px 24px rgba(22, 34, 44, .05);
     }
-  }
-  :root[data-theme="dark"]{
-    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
-    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
-    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
-  }
 
-  *{ box-sizing:border-box; }
-  body{
-    background:var(--paper); color:var(--ink); margin:0;
-    font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
-    font-size:15.5px; line-height:1.6;
-  }
-  h1,h2{ font-family:'Be Vietnam Pro',system-ui,sans-serif; text-wrap:balance; margin:0; }
-  code{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
-  a{ color:var(--accent); text-decoration:none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --paper: #0e141a;
+        --surface: #151d24;
+        --surface-2: #1b252d;
+        --ink: #e7edf2;
+        --ink-soft: #9fb0bd;
+        --ink-faint: #6f818d;
+        --line: #263140;
+        --accent: #6ba3dd;
+        --accent-ink: #0e141a;
+        --accent-soft: rgba(107, 163, 221, .14);
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+      }
+    }
 
-  .wrap{ max-width:880px; margin:0 auto; padding:64px 24px 96px; }
+    :root[data-theme="dark"] {
+      --paper: #0e141a;
+      --surface: #151d24;
+      --surface-2: #1b252d;
+      --ink: #e7edf2;
+      --ink-soft: #9fb0bd;
+      --ink-faint: #6f818d;
+      --line: #263140;
+      --accent: #6ba3dd;
+      --accent-ink: #0e141a;
+      --accent-soft: rgba(107, 163, 221, .14);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+    }
 
-  .topline{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
-  .eyebrow{
-    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em;
-    text-transform:uppercase; color:var(--accent); font-weight:600;
-  }
-  .admin-link{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
-  .admin-link:hover{ color:var(--accent); }
-  h1.title{ font-size:36px; font-weight:800; letter-spacing:-.01em; margin-top:8px; }
-  .lead{ color:var(--ink-soft); font-size:16px; max-width:62ch; margin-top:12px; }
+    * {
+      box-sizing: border-box;
+    }
 
-  .filters{ display:flex; flex-wrap:wrap; gap:8px; margin-top:32px; }
-  .filter-chip{
-    font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600;
-    padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
-    color:var(--ink-soft); cursor:pointer; transition:border-color .15s, color .15s;
-  }
-  .filter-chip:hover{ border-color:var(--accent); color:var(--accent); }
-  .filter-chip.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      margin: 0;
+      font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+      font-size: 15.5px;
+      line-height: 1.6;
+    }
 
-  .empty{
-    margin-top:20px; padding:32px; text-align:center; color:var(--ink-faint); font-size:13.5px;
-    border:1px dashed var(--line); border-radius:var(--radius-lg);
-  }
+    h1,
+    h2 {
+      font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+      text-wrap: balance;
+      margin: 0;
+    }
 
-  .year-group{ margin-top:36px; }
-  .year-label{
-    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--ink-faint);
-    letter-spacing:.06em; margin-bottom:12px;
-  }
-  .list{ display:flex; flex-direction:column; gap:10px; }
-  .card{
-    display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--radius-lg); padding:16px 18px; box-shadow:var(--shadow); transition:border-color .15s;
-  }
-  .card:hover{ border-color:var(--accent); }
-  .card .icon{
-    flex:none; width:42px; height:42px; border-radius:11px; background:var(--accent-soft);
-    display:flex; align-items:center; justify-content:center; font-size:19px;
-  }
-  .card .body{ flex:1; min-width:0; }
-  .card h2{ font-size:15.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
-  .card p{ margin:3px 0 0; color:var(--ink-faint); font-size:12.8px; }
-  .card .tag{
-    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600;
-    letter-spacing:.04em; text-transform:uppercase; color:var(--accent); background:var(--accent-soft);
-    border-radius:5px; padding:2px 7px; margin-right:2px; vertical-align:1px;
-  }
-  .card .lock{ font-size:11px; }
-  .card .meta{ flex:none; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
-  .card .open{
-    flex:none; font-size:13px; font-weight:600; color:var(--accent); border:1px solid var(--line);
-    border-radius:999px; padding:6px 14px; white-space:nowrap;
-  }
-  .card:hover .open{ border-color:var(--accent); }
+    code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    }
 
-  @media (max-width:560px){
-    .card{ flex-wrap:wrap; }
-    .card .open{ order:1; margin-left:58px; }
-  }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
 
-  .foot{ margin-top:56px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:12.5px; }
-</style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 64px 24px 96px;
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .admin-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: var(--ink-faint);
+    }
+
+    .admin-link:hover {
+      color: var(--accent);
+    }
+
+    h1.title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      margin-top: 8px;
+    }
+
+    .lead {
+      color: var(--ink-soft);
+      font-size: 16px;
+      max-width: 62ch;
+      margin-top: 12px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 32px;
+    }
+
+    .filter-chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 6px 13px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+
+    .filter-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .empty {
+      margin-top: 20px;
+      padding: 32px;
+      text-align: center;
+      color: var(--ink-faint);
+      font-size: 13.5px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-lg);
+    }
+
+    .year-group {
+      margin-top: 36px;
+    }
+
+    .year-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-faint);
+      letter-spacing: .06em;
+      margin-bottom: 12px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      transition: border-color .15s;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+    }
+
+    .card .icon {
+      flex: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+    }
+
+    .card .body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card h2 {
+      font-size: 15.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card p {
+      margin: 3px 0 0;
+      color: var(--ink-faint);
+      font-size: 12.8px;
+    }
+
+    .card .tag {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 5px;
+      padding: 2px 7px;
+      margin-right: 2px;
+      vertical-align: 1px;
+    }
+
+    .card .lock {
+      font-size: 11px;
+    }
+
+    .card .meta {
+      flex: none;
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: var(--ink-faint);
+    }
+
+    .card .open {
+      flex: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 14px;
+      white-space: nowrap;
+    }
+
+    .card:hover .open {
+      border-color: var(--accent);
+    }
+
+    @media (max-width:560px) {
+      .card {
+        flex-wrap: wrap;
+      }
+
+      .card .open {
+        order: 1;
+        margin-left: 58px;
+      }
+    }
+
+    .foot {
+      margin-top: 56px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-faint);
+      font-size: 12.5px;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
   <div class="wrap">
     <div class="topline">
@@ -111,7 +309,8 @@
       <a class="admin-link" href="admin.html">Quản trị →</a>
     </div>
     <h1 class="title">Thư viện tài liệu</h1>
-    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu. Mỗi mục tự chứa 1 trang, mở trực tiếp không cần tải về. Mục ẩn 👁 chỉ hiện với máy đã đăng nhập admin.</p>
+    <p class="lead">Tài liệu, báo cáo, ghi chú... gom lại theo thời gian — không giới hạn 1 dự án hay 1 loại tài liệu.
+      Mỗi mục tự chứa 1 trang, mở trực tiếp không cần tải về.</p>
 
     <div class="filters" id="filters"></div>
     <div id="empty" class="empty" style="display:none">Không có tài liệu nào trong nhóm này.</div>
@@ -128,11 +327,13 @@
     var items = [];
     var isAdmin = false;
 
-    function adminToken(){
-      try { return localStorage.getItem("xdhy_admin_token") || ""; } catch(e) { return ""; }
+    function adminToken()
+    {
+      try { return localStorage.getItem("xdhy_admin_token") || ""; } catch (e) { return ""; }
     }
 
-    function slugify(str){
+    function slugify(str)
+    {
       return str
         .normalize("NFD").replace(/[̀-ͯ]/g, "")
         .toLowerCase()
@@ -141,39 +342,46 @@
         .replace(/^-+|-+$/g, "");
     }
 
-    function formatDate(iso){
+    function formatDate(iso)
+    {
       var d = new Date(iso + "T00:00:00");
       return d.toLocaleDateString("vi-VN");
     }
 
-    function categoryFromUrl(slugToCategory){
+    function categoryFromUrl(slugToCategory)
+    {
       var slug = new URLSearchParams(window.location.search).get("cat");
       return (slug && slugToCategory[slug]) ? slugToCategory[slug] : "all";
     }
 
-    function syncUrl(cat){
+    function syncUrl(cat)
+    {
       var url = new URL(window.location.href);
       if (cat === "all") url.searchParams.delete("cat");
       else url.searchParams.set("cat", slugify(cat));
       history.replaceState(null, "", url.pathname + url.search);
     }
 
-    function render(){
+    function render()
+    {
       groupsEl.innerHTML = "";
-      var filtered = items.filter(function(it){
+      var filtered = items.filter(function (it)
+      {
         return activeCategory === "all" || it.category === activeCategory;
       });
-      filtered.sort(function(a, b){ return b.date.localeCompare(a.date); });
+      filtered.sort(function (a, b) { return b.date.localeCompare(a.date); });
 
       emptyEl.style.display = filtered.length ? "none" : "block";
 
       var byYear = {};
-      filtered.forEach(function(it){
+      filtered.forEach(function (it)
+      {
         var year = it.date.slice(0, 4);
         (byYear[year] = byYear[year] || []).push(it);
       });
 
-      Object.keys(byYear).sort().reverse().forEach(function(year){
+      Object.keys(byYear).sort().reverse().forEach(function (year)
+      {
         var group = document.createElement("div");
         group.className = "year-group";
         var label = document.createElement("div");
@@ -183,13 +391,13 @@
 
         var list = document.createElement("div");
         list.className = "list";
-        byYear[year].forEach(function(it){
+        byYear[year].forEach(function (it)
+        {
           var a = document.createElement("a");
           a.href = "doc.html?slug=" + encodeURIComponent(it.slug);
           a.className = "card";
           var lock = it.visibility === "hidden" ? '<span class="lock" title="Ẩn — chỉ admin thấy">👁</span>' : "";
           a.innerHTML =
-            '<div class="icon">' + it.icon + '</div>' +
             '<div class="body"><h2><span class="tag">' + it.category + '</span>' + it.title + lock + '</h2><p>' + it.desc + '</p></div>' +
             '<div class="meta">' + formatDate(it.date) + '</div>' +
             '<div class="open">Xem →</div>';
@@ -200,24 +408,28 @@
       });
     }
 
-    function setupFilters(){
+    function setupFilters()
+    {
       var categories = ["all"].concat(
-        items.reduce(function(acc, it){
+        items.reduce(function (acc, it)
+        {
           if (acc.indexOf(it.category) === -1) acc.push(it.category);
           return acc;
         }, [])
       );
       var slugToCategory = {};
-      categories.forEach(function(cat){ slugToCategory[slugify(cat)] = cat; });
+      categories.forEach(function (cat) { slugToCategory[slugify(cat)] = cat; });
       activeCategory = categoryFromUrl(slugToCategory);
 
-      categories.forEach(function(cat){
+      categories.forEach(function (cat)
+      {
         var btn = document.createElement("button");
         btn.className = "filter-chip" + (cat === activeCategory ? " active" : "");
         btn.textContent = cat === "all" ? "Tất cả" : cat;
-        btn.addEventListener("click", function(){
+        btn.addEventListener("click", function ()
+        {
           activeCategory = cat;
-          filtersEl.querySelectorAll(".filter-chip").forEach(function(c){ c.classList.remove("active"); });
+          filtersEl.querySelectorAll(".filter-chip").forEach(function (c) { c.classList.remove("active"); });
           btn.classList.add("active");
           syncUrl(cat);
           render();
@@ -225,9 +437,11 @@
         filtersEl.appendChild(btn);
       });
 
-      window.addEventListener("popstate", function(){
+      window.addEventListener("popstate", function ()
+      {
         activeCategory = categoryFromUrl(slugToCategory);
-        filtersEl.querySelectorAll(".filter-chip").forEach(function(c){
+        filtersEl.querySelectorAll(".filter-chip").forEach(function (c)
+        {
           c.classList.toggle("active", c.textContent === (activeCategory === "all" ? "Tất cả" : activeCategory));
         });
         render();
@@ -236,24 +450,27 @@
 
     var token = adminToken();
     Promise.all([
-      fetch("docs.json").then(function(r){ return r.json(); }),
+      fetch("docs.json").then(function (r) { return r.json(); }),
       fetch("/api/visibility", {
         headers: token ? { Authorization: "Bearer " + token } : {}
-      }).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-    ]).then(function(results){
+      }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+    ]).then(function (results)
+    {
       var registry = results[0];
       var visibilityMap = (results[1] && results[1].map) || {};
       isAdmin = !!(results[1] && results[1].isAdmin);
       items = registry
-        .map(function(it){
+        .map(function (it)
+        {
           return Object.assign({}, it, { visibility: visibilityMap[it.slug] === "hidden" ? "hidden" : "visible" });
         })
-        .filter(function(it){ return isAdmin || it.visibility !== "hidden"; });
+        .filter(function (it) { return isAdmin || it.visibility !== "hidden"; });
       setupFilters();
       render();
       document.getElementById("foot").textContent =
-        items.length + " tài liệu · cập nhật lần cuối " + formatDate(items.reduce(function(m, it){ return it.date > m ? it.date : m; }, items[0].date));
+        items.length + " tài liệu · cập nhật lần cuối " + formatDate(items.reduce(function (m, it) { return it.date > m ? it.date : m; }, items[0].date));
     });
   </script>
 </body>
+
 </html>
