@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tích hợp SSO ConsHY</title>
+<style>
+  :root{
+    --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
+    --ink:#16222c; --ink-soft:#556775; --ink-faint:#8a97a3; --line:#dde4ea;
+    --accent:#2563a6; --accent-ink:#ffffff; --accent-soft:#e7eff8;
+    --good:#2f7d4f; --good-soft:#e6f3ea;
+    --warn:#a15a1f; --warn-soft:#f7ecdf;
+    --bad:#b5342a; --bad-soft:#fbe9e7;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(22,34,44,.04), 0 8px 24px rgba(22,34,44,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+      --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+      --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+      --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+      --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+      --bad:#e2837a; --bad-soft:rgba(226,131,122,.13);
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141a; --surface:#151d24; --surface-2:#1b252d;
+    --ink:#e7edf2; --ink-soft:#9fb0bd; --ink-faint:#6f818d; --line:#263140;
+    --accent:#6ba3dd; --accent-ink:#0e141a; --accent-soft:rgba(107,163,221,.14);
+    --good:#6fbf90; --good-soft:rgba(111,191,144,.12);
+    --warn:#d99a5c; --warn-soft:rgba(217,154,92,.12);
+    --bad:#e2837a; --bad-soft:rgba(226,131,122,.13);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--paper); color:var(--ink); margin:0;
+    font-family:'IBM Plex Sans','Arial',system-ui,-apple-system,sans-serif;
+    font-size:15.5px; line-height:1.65;
+  }
+  h1,h2,h3{ font-family:'Be Vietnam Pro','Arial',system-ui,sans-serif; text-wrap:balance; margin:0; color:var(--ink); }
+  code{ font-family:'IBM Plex Mono',ui-monospace,monospace; background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:13px; }
+  pre{ font-family:'IBM Plex Mono',ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; font-size:12.8px; overflow-x:auto; line-height:1.55; }
+  pre code{ background:none; padding:0; }
+  a{ color:var(--accent); }
+  .wrap{ max-width:960px; margin:0 auto; padding:56px 24px 96px; }
+
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1.title{ font-size:34px; font-weight:800; letter-spacing:-.01em; margin-top:10px; }
+  .lead{ color:var(--ink-soft); font-size:16px; max-width:66ch; margin-top:12px; }
+
+  .metabar{ display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  .metabar span{ font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--ink-soft); }
+
+  nav.toc{ position:sticky; top:0; z-index:5; background:var(--paper); border-bottom:1px solid var(--line); padding:14px 0; margin-top:36px; display:flex; gap:6px; flex-wrap:wrap; }
+  nav.toc a{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-decoration:none; color:var(--ink-soft); padding:6px 11px; border-radius:7px; border:1px solid transparent; }
+  nav.toc a:hover{ border-color:var(--line); color:var(--ink); }
+
+  section{ margin-top:52px; }
+  .docmark{ display:flex; align-items:baseline; gap:12px; }
+  .docmark .num{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--accent-ink); background:var(--accent); padding:3px 10px; border-radius:6px; }
+  section h2{ font-size:23px; font-weight:700; }
+  section > .lede{ margin-top:8px; color:var(--ink-soft); max-width:68ch; }
+  h3{ font-size:17px; font-weight:700; margin-top:32px; margin-bottom:12px; }
+  p{ max-width:70ch; }
+  ul.plain{ margin:10px 0 0; padding-left:20px; max-width:70ch; }
+  ul.plain li{ margin-top:6px; font-size:14px; }
+
+  .steps{ counter-reset:step; list-style:none; margin:16px 0 0; padding:0; display:flex; flex-direction:column; gap:14px; }
+  .steps li{ counter-increment:step; position:relative; padding-left:38px; font-size:14px; max-width:74ch; }
+  .steps li::before{ content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .steps li .stitle{ font-weight:700; display:block; margin-bottom:4px; }
+
+  .tablewrap{ overflow-x:auto; margin-top:14px; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); font-size:13.5px; }
+  th,td{ text-align:left; padding:9px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  thead th{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  .callout{ margin-top:16px; padding:13px 17px; border-left:3px solid var(--good); background:var(--good-soft); font-size:13.8px; border-radius:0 8px 8px 0; max-width:74ch; }
+  .callout b{ color:var(--good); }
+  .callout.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
+  .callout.warn b{ color:var(--warn); }
+  .callout.bad{ border-left-color:var(--bad); background:var(--bad-soft); }
+  .callout.bad b{ color:var(--bad); }
+
+  .diagram{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:22px; margin-top:16px; overflow-x:auto; }
+  .diagram .cap{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-faint); margin-top:16px; border-top:1px dashed var(--line); padding-top:12px; max-width:none; }
+  .mermaid{ display:flex; justify-content:center; }
+
+  .tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; vertical-align:1px; }
+  .tag.pending{ color:var(--bad); background:var(--bad-soft); }
+
+  footer{ margin-top:64px; padding-top:18px; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">Hướng dẫn tích hợp · Hệ thống ConsHY (XDHY)</span>
+  <h1 class="title">Tích hợp SSO cho app khác</h1>
+  <p class="lead">Dành cho chủ app khác (chat, meeting, app mới sau này) muốn dùng chung đăng nhập với build-web thay vì tự làm auth riêng. Viết theo từng bước, kèm code mẫu thật lấy từ api-sso/api-gateway/api-task-management hiện có.</p>
+  <div class="metabar">
+    <span>Cập nhật 05/09/2026</span>
+    <span>Phần web: đã chạy thật (tham khảo build-web)</span>
+    <span>Phần mobile: đề xuất — CHƯA có endpoint tương ứng</span>
+  </div>
+
+  <nav class="toc">
+    <a href="#tong-quan">Tổng quan</a>
+    <a href="#web">Tích hợp web app</a>
+    <a href="#mobile">Tích hợp app mobile</a>
+    <a href="#luu-y">Lưu ý chung / lỗi hay gặp</a>
+  </nav>
+
+  <section id="tong-quan">
+    <div class="docmark"><span class="num">1</span><h2>Tổng quan hệ thống SSO</h2></div>
+    <p class="lede">Điều kiện tiên quyết để tích hợp: app của bạn phải chạy trên 1 <b>subdomain của cùng domain cha</b> với build-web/sso-web (vd <code>chat.xaydung.vn</code> nếu domain cha là <code>xaydung.vn</code>) — cookie đăng nhập chỉ dùng chung được trong phạm vi 1 domain cha.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Thành phần</th><th>Vai trò</th><th>Bạn cần biết gì</th></tr></thead>
+        <tbody>
+          <tr><td><code>api-sso</code></td><td>Phát hành/xác thực token, giữ private key</td><td>API thuần, gọi qua gateway — không gọi thẳng</td></tr>
+          <tr><td><code>sso-web</code></td><td>Trang đăng nhập/quên mật khẩu dùng chung</td><td>Redirect người dùng sang đây khi chưa đăng nhập</td></tr>
+          <tr><td><code>api-gateway</code></td><td>Cổng vào duy nhất, verify JWT qua JWKS</td><td>Mọi request (kể cả tới api-sso) đều qua đây</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6 endpoint api-sso phơi qua gateway</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Method</th><th>Path qua gateway</th><th>Dùng khi nào</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td><code>/api/login</code></td><td>Đăng nhập — body <code>{username, password, remember}</code>, <code>username</code> nhận cả tài khoản/email/số điện thoại</td></tr>
+          <tr><td>POST</td><td><code>/api/refresh</code></td><td>Làm mới access token khi hết hạn (đọc refresh cookie tự động)</td></tr>
+          <tr><td>POST</td><td><code>/api/logout</code></td><td>Thu hồi phiên + xoá cookie</td></tr>
+          <tr><td>GET</td><td><code>/api/me</code></td><td>Kiểm tra đã đăng nhập chưa + lấy thông tin user hiện tại</td></tr>
+          <tr><td>POST</td><td><code>/api/forgot-password</code></td><td>Body <code>{email}</code> — gửi email chứa link đặt lại mật khẩu</td></tr>
+          <tr><td>POST</td><td><code>/api/reset-password-confirm</code></td><td>Body <code>{token, newPassword}</code> — token lấy từ link email</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Token là JWT ký RS256, payload access token: <code>{user_id, full_name, user_name, role_group, type:'access'}</code> — <b>không có sẵn</b> cây quyền (<code>functions</code>/<code>actions</code>), muốn có phải tự gọi <code>GET /me</code>.</p>
+  </section>
+
+  <section id="web">
+    <div class="docmark"><span class="num">2</span><h2>Tích hợp web app</h2></div>
+    <p class="lede">Đúng luồng build-web đang chạy thật trong sandbox — copy được gần như nguyên văn.</p>
+
+    <ol class="steps">
+      <li>
+        <span class="stitle">Xin domain con + đăng ký CORS ở gateway</span>
+        Domain app phải là subdomain của domain cha dùng chung (để cookie <code>Domain=.xaydung.vn</code> đọc được). Báo cho người quản trị <code>api-gateway</code> thêm 1 pipeline + biến CORS riêng cho origin của bạn — <b>không</b> dùng chung biến CORS của app khác, vì package <code>cors</code> hiểu chuỗi origin là <b>1 origin literal</b>, không tự tách theo dấu phẩy để so khớp động (lỗi thật đã gặp lúc làm sso-web — mỗi pipeline cần 1 biến origin riêng).
+      </li>
+      <li>
+        <span class="stitle">Mọi request gọi API phải gửi kèm cookie</span>
+        <pre><code>// axios
+const apiClient = axios.create({ baseURL: GATEWAY_URL, withCredentials: true });
+
+// fetch
+fetch(url, { credentials: 'include' })</code></pre>
+        Thiếu <code>withCredentials</code> / <code>credentials: 'include'</code> thì trình duyệt không gửi cookie httpOnly kèm request — lỗi phổ biến nhất khi mới tích hợp, biểu hiện là <code>/me</code> luôn trả 401 dù vừa đăng nhập xong.
+      </li>
+      <li>
+        <span class="stitle">Chưa đăng nhập → redirect cross-origin sang sso-web</span>
+        <pre><code>// Không dùng &lt;Navigate&gt;/router nội bộ - đích nằm khác origin
+const SSO_URL = import.meta.env.VITE_SSO_URL; // vd https://sso.xaydung.vn
+function redirectToLogin() {
+  const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = `${SSO_URL}/login?redirect=${redirect}`;
+}</code></pre>
+        <code>redirect</code> phải là 1 URL/path bạn kiểm soát được — sso-web tự chặn open-redirect (chỉ chấp nhận path nội bộ hoặc domain nằm trong whitelist cấu hình lúc build sso-web, cần báo trước domain của bạn để được thêm vào whitelist đó).
+      </li>
+      <li>
+        <span class="stitle">Bootstrap phiên đăng nhập lúc app khởi động</span>
+        Gọi <code>GET /me</code> qua gateway 1 lần lúc app mount (không phải trong từng component con) — 200 thì lưu user vào state, 401 thì gọi bước 3. Phải phân biệt rõ 3 trạng thái <code>loading/authenticated/unauthenticated</code> trong state — nếu chỉ có 2 trạng thái, lúc F5 trang sẽ có 1 khoảnh khắc bị hiểu nhầm là "chưa đăng nhập" và redirect oan trước khi <code>/me</code> kịp trả lời.
+      </li>
+      <li>
+        <span class="stitle">Access token hết hạn giữa chừng → tự refresh 1 lần</span>
+        <pre><code>let refreshPromise = null;
+apiClient.interceptors.response.use(null, async (error) => {
+  if (error.response?.status === 401 &amp;&amp; !error.config._retried) {
+    error.config._retried = true;
+    refreshPromise ??= apiClient.post('/refresh').finally(() => { refreshPromise = null; });
+    await refreshPromise;
+    return apiClient(error.config);
+  }
+  return Promise.reject(error);
+});</code></pre>
+        Dùng chung 1 promise đang chạy (không tạo request <code>/refresh</code> mới cho từng request 401 đến cùng lúc) — nhiều request song song lúc token vừa hết hạn mà mỗi cái tự gọi refresh riêng dễ sinh race, đây là bug thật đã xảy ra ở build-web trước khi có SSO.
+      </li>
+      <li>
+        <span class="stitle">Đăng xuất</span>
+        <code>POST /logout</code> qua gateway rồi xoá state phía client — service tự thu hồi session + clear cả 2 cookie (access/refresh) theo đúng domain đã set, không cần bạn tự xoá cookie tay (không xoá được vì httpOnly).
+      </li>
+    </ol>
+
+    <div class="callout warn">
+      <b>Không tự làm form đăng nhập riêng.</b> Mọi app dùng chung đúng 1 trang login (<code>sso-web</code>) — nếu app bạn cần giao diện khác biệt (branding riêng), trao đổi trước với đội SSO thay vì tự dựng form gọi thẳng <code>/api/login</code>, để tránh mỗi app một kiểu xử lý lỗi/2FA sau này.
+    </div>
+  </section>
+
+  <section id="mobile">
+    <div class="docmark"><span class="num">3</span><h2>Tích hợp app mobile <span class="tag pending">đề xuất — chưa build</span></h2></div>
+    <p class="lede"><b>Toàn bộ mục này là thiết kế đề xuất, api-sso hiện tại KHÔNG có endpoint nào phục vụ mobile.</b> Ghi lại để chủ app mobile biết trước hướng đi và những gì cần xin đội SSO làm thêm — không phải hướng dẫn tích hợp ngay được.</p>
+
+    <h3>Vì sao không dùng lại nguyên xi cách của web</h3>
+    <ul class="plain">
+      <li>Cookie <code>httpOnly</code> là cơ chế của trình duyệt — app native (Swift/Kotlin/React Native không dùng WebView cho toàn bộ app) không có "cookie jar dùng chung" giữa các domain theo cách browser có.</li>
+      <li>Không nên nhúng WebView để giữ session qua cookie — trải nghiệm kém, và nhiều hệ thống định danh (Google, Apple) khuyến cáo không đăng nhập trong WebView vì không cho người dùng thấy rõ domain thật đang nhập mật khẩu.</li>
+    </ul>
+
+    <h3>Mẫu hình đề xuất: mở trình duyệt hệ thống + đổi code lấy token</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+  actor U as Người dùng
+  participant App as App mobile
+  participant Browser as Safari/Chrome hệ thống
+  participant SW as sso-web
+  participant SSO as api-sso (endpoint MỚI, chưa có)
+
+  U->>App: Bấm "Đăng nhập"
+  App->>Browser: Mở sso-web/login?client=mobile (SFSafariViewController / Custom Tabs)
+  U->>SW: Đăng nhập bình thường (tài khoản/mật khẩu)
+  SW->>SSO: POST /login (như luồng web)
+  SSO-->>SW: Set-Cookie (dùng nội bộ cho chính sso-web)
+  SW->>SSO: Sinh 1 "authorization code" dùng 1 lần, hạn ngắn (~60s)
+  SW-->>Browser: Redirect sang custom URL scheme<br/>vd conshy://auth-callback?code=...
+  Browser-->>App: Hệ điều hành mở lại app kèm code
+  App->>SSO: POST /mobile/token-exchange {code}
+  SSO-->>App: {access_token, refresh_token} dạng JSON (KHÔNG set cookie)
+  App->>App: Lưu 2 token vào Keychain (iOS) / Keystore (Android)
+      </pre>
+      <p class="cap">Giống mô hình Authorization Code phổ biến ở OAuth2 cho ứng dụng native — code đổi 1 lần, sống ngắn hạn, tránh lộ token thật qua URL scheme (URL scheme không mã hoá, log lại được ở hệ điều hành).</p>
+    </div>
+
+    <h3>Việc cần xin đội SSO làm thêm (chưa có trong api-sso hôm nay)</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Việc</th><th>Vì sao cần</th></tr></thead>
+        <tbody>
+          <tr><td>Endpoint <code>POST /mobile/token-exchange</code></td><td>Đổi authorization code lấy access/refresh token dạng JSON, không qua cookie</td></tr>
+          <tr><td><code>/refresh</code> nhận thêm refresh token qua body/header</td><td>Hiện tại <code>/refresh</code> chỉ đọc từ cookie (<code>req.cookies?.refresh_token</code>) — mobile không có cookie, cần app tự gửi refresh token trong <code>Authorization</code> header hoặc body</td></tr>
+          <tr><td>Đăng ký custom URL scheme của từng app mobile</td><td>sso-web cần biết scheme nào được phép redirect tới (tương tự whitelist domain redirect ở bản web) — tránh app giả mạo nhận code</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Phía app mobile cần làm</h3>
+    <ul class="plain">
+      <li>Lưu token bằng <b>Keychain</b> (iOS)/<b>Android Keystore</b> (qua <code>EncryptedSharedPreferences</code>) — không lưu ở <code>UserDefaults</code>/<code>SharedPreferences</code> thường (đọc được nếu máy bị root/jailbreak).</li>
+      <li>Mọi request API gắn <code>Authorization: Bearer &lt;access_token&gt;</code> — endpoint hiện tại (<code>/me</code>, middleware <code>authenticate</code> của api-task-management, gateway) đã sẵn sàng nhận theo header này (đọc cookie trước, header sau, xem <code>authController.me</code>/<code>authMiddleware.ts</code>), không cần đổi gì thêm ở phía service cho việc verify.</li>
+      <li>Access token hết hạn (15 phút mặc định) → gọi lại endpoint refresh mới (mục trên) bằng refresh token đang lưu, không phải đăng nhập lại từ đầu.</li>
+      <li>Đăng xuất: gọi <code>/logout</code> kèm token qua header (không cookie) để service thu hồi đúng session, rồi xoá token khỏi Keychain/Keystore.</li>
+    </ul>
+
+    <div class="callout bad">
+      <b>Chưa làm được ngay:</b> nếu app mobile cần tích hợp trước khi các endpoint trên có, giải pháp tạm là gọi thẳng <code>/api/login</code> bằng JSON (không dùng cookie, đọc access/refresh token thẳng từ response body <code>Set-Cookie</code> — cần backend đổi để cũng trả token trong JSON body, hiện tại <code>login</code> chỉ trả về <code>result.user</code>) — nhưng cách này không tách được "web" và "mobile client" như thiết kế trên, chỉ nên coi là giải pháp tạm và cần trao đổi trước với đội SSO.
+    </div>
+  </section>
+
+  <section id="luu-y">
+    <div class="docmark"><span class="num">4</span><h2>Lưu ý chung / lỗi hay gặp</h2></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td><code>/me</code> luôn 401 dù vừa login xong</td><td>Thiếu <code>withCredentials</code> / <code>credentials:'include'</code>, hoặc app không nằm trên subdomain của domain cha nên cookie không gửi kèm</td></tr>
+          <tr><td>CORS lỗi dù đã khai origin</td><td>Origin của bạn dùng chung biến với app khác — package <code>cors</code> không tách chuỗi theo dấu phẩy, cần biến riêng cho từng pipeline</td></tr>
+          <tr><td>Redirect sang sso-web nhưng quay lại không đúng trang</td><td>Domain redirect chưa được thêm vào whitelist lúc build sso-web (<code>VITE_ALLOWED_REDIRECT_SUFFIX</code>) — báo đội SSO thêm domain của bạn</td></tr>
+          <tr><td>Đăng xuất xong vẫn còn đăng nhập được</td><td>Chỉ xoá cookie phía client tay (không xoá được vì httpOnly) thay vì gọi <code>POST /logout</code> — phải gọi đúng endpoint để service revoke session + clear cookie đúng domain</td></tr>
+          <tr><td>Token verify được ở service này nhưng không được ở service khác</td><td>Service kia còn dùng logic cũ (so khớp secret) thay vì verify qua JWKS (<code>jwks-rsa</code>, biến môi trường <code>JWT_JWKS_URI</code> trỏ <code>{api-sso}/.well-known/jwks.json</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <b>Đăng ký trước khi tích hợp:</b> báo đội SSO 3 thứ — domain con app sẽ dùng, origin cần thêm CORS, và (nếu redirect người dùng) domain/scheme cần thêm vào whitelist redirect — để tránh vướng ở bước cuối lúc demo.
+    </div>
+  </section>
+
+  <footer>XDHY · ConsHY · Hướng dẫn tích hợp · Phần web đã kiểm thử thật, phần mobile là đề xuất thiết kế chưa triển khai</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  (function(){
+    var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'neutral',
+      securityLevel: 'strict',
+      fontFamily: "'IBM Plex Sans', Arial, sans-serif"
+    });
+  })();
+</script>
+</body>
+</html>

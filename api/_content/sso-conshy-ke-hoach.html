@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kế hoạch SSO ConsHY</title>
+<title>SSO ConsHY — Trạng thái thực tế</title>
 <style>
   :root{
     --paper:#f5f7f9; --surface:#ffffff; --surface-2:#eef2f5;
@@ -67,21 +67,24 @@
 
   .appgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:14px; margin-top:16px; }
   .appcard{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:18px 20px 20px; }
+  .appcard.pending{ opacity:.72; border-style:dashed; }
   .appcard .name{ font-family:'Be Vietnam Pro',sans-serif; font-weight:700; font-size:16px; }
   .appcard .role{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); display:block; margin-top:2px; }
   .tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; vertical-align:1px; }
   .tag.new{ color:var(--good); background:var(--good-soft); }
   .tag.existing{ color:var(--warn); background:var(--warn-soft); }
+  .tag.pending{ color:var(--ink-faint); background:var(--surface-2); }
   .appcard ol{ margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
   .appcard li{ display:grid; grid-template-columns:32px 1fr; gap:9px; font-size:13.8px; align-items:baseline; }
   .phasechip{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; text-align:center; padding:2px 0; border-radius:5px; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line); height:fit-content; }
+  .phasechip.todo{ color:var(--warn); background:var(--warn-soft); }
 
   .diagram{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:22px; margin-top:16px; overflow-x:auto; }
   .diagram .cap{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-faint); margin-top:16px; border-top:1px dashed var(--line); padding-top:12px; max-width:none; }
   .mermaid{ display:flex; justify-content:center; }
 
   .steps{ counter-reset:step; list-style:none; margin:16px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
-  .steps li{ counter-increment:step; position:relative; padding-left:38px; font-size:14px; }
+  .steps li{ counter-increment:step; position:relative; padding-left:38px; font-size:14px; max-width:70ch; }
   .steps li::before{ content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 
   .tablewrap{ overflow-x:auto; margin-top:14px; border:1px solid var(--line); border-radius:var(--radius); }
@@ -90,7 +93,7 @@
   thead th{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); }
   tbody tr:last-child td{ border-bottom:none; }
 
-  .callout{ margin-top:16px; padding:13px 17px; border-left:3px solid var(--good); background:var(--good-soft); font-size:13.8px; border-radius:0 8px 8px 0; }
+  .callout{ margin-top:16px; padding:13px 17px; border-left:3px solid var(--good); background:var(--good-soft); font-size:13.8px; border-radius:0 8px 8px 0; max-width:70ch; }
   .callout b{ color:var(--good); }
   .callout.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
   .callout.warn b{ color:var(--warn); }
@@ -104,236 +107,230 @@
 <div class="wrap">
 
   <span class="eyebrow">Tài liệu kỹ thuật · Hệ thống ConsHY (XDHY)</span>
-  <h1 class="title">Kế hoạch SSO cho build-web, chat &amp; meeting</h1>
-  <p class="lead">Đưa ba ứng dụng về một điểm đăng nhập duy nhất, dùng chung một danh tính, trên một domain gốc — chưa code, chỉ thống nhất hướng.</p>
+  <h1 class="title">SSO ConsHY — trạng thái thực tế (as-built)</h1>
+  <p class="lead">Đã dựng xong và kiểm thử end-to-end trong sandbox Docker riêng (không đụng DB/hạ tầng thật). Tài liệu này thay thế bản kế hoạch trước — ghi lại đúng những gì đã chạy được, không phải dự định.</p>
   <div class="metabar">
     <span>Cập nhật 05/09/2026</span>
-    <span>Phạm vi: build-web · chat · meeting</span>
-    <span>Toàn bộ dữ liệu hiện tại là dữ liệu test</span>
+    <span>Trạng thái: xong ở sandbox — CHƯA lên production</span>
+    <span>Sandbox: docker-compose.sso-sandbox.yml, domain OrbStack .orb.local</span>
   </div>
 
   <nav class="toc">
-    <a href="#doc1">Tài liệu 1 — Việc từng app phải làm</a>
-    <a href="#doc2">Tài liệu 2 — Kiến trúc &amp; luồng xử lý</a>
+    <a href="#doc1">Tài liệu 1 — Từng app đã làm gì</a>
+    <a href="#doc2">Tài liệu 2 — Kiến trúc thật</a>
     <a href="#kien-truc">Sơ đồ kiến trúc</a>
     <a href="#luong-login">Luồng đăng nhập</a>
-    <a href="#luong-api">Luồng gọi API</a>
+    <a href="#luong-quen-mk">Luồng quên mật khẩu</a>
+    <a href="#checklist">Checklist trước khi lên production</a>
   </nav>
 
   <section id="doc1">
-    <div class="docmark"><span class="num">Tài liệu 1</span><h2>Việc từng app phải làm</h2></div>
-    <p class="lede">Thứ tự pha P0→P5 đúng theo trình tự triển khai — pha sau xây trên nền pha trước, không đảo thứ tự.</p>
-
-    <div class="callout">
-      <b>Vì toàn bộ dữ liệu hiện tại chỉ là dữ liệu test</b> (18 user build, 21 user chat, 26 cuộc họp mẫu) — không cần bước đối chiếu/mapping người dùng cũ. Cách sạch nhất: xoá sạch dữ liệu test trước khi bật SSO thật, tạo lại tài khoản thật ngay trên hệ thống mới. Chi tiết ở mục "Xử lý dữ liệu test" cuối Tài liệu 2.
-    </div>
+    <div class="docmark"><span class="num">Tài liệu 1</span><h2>Từng app đã làm gì</h2></div>
+    <p class="lede">So với bản kế hoạch ban đầu, hai điểm đổi hướng lớn nhất: <b>api-sso tách hẳn thành API thuần</b> (không tự phục vụ trang login), và <b>sso-web là 1 frontend độc lập mới</b> (không nằm trong kế hoạch gốc) — quyết định này đến từ việc giao diện login cần đầy đủ toast/dark-mode/quên mật khẩu, làm bằng HTML+JS thuần không còn hợp lý.</p>
 
     <div class="legend">
-      <div><b>P0</b>Hạ tầng</div>
-      <div><b>P1</b>Tách api-sso</div>
-      <div><b>P2</b>Đổi token RS256</div>
-      <div><b>P3</b>Domain chung + bỏ login</div>
-      <div><b>P4</b>Xoá dữ liệu test + go-live danh tính</div>
-      <div><b>P5</b>Dọn dẹp &amp; nối meeting</div>
+      <div><b>Xong</b>Đã build + test trong sandbox</div>
+      <div><b>Chưa</b>Chưa bắt đầu</div>
     </div>
 
     <div class="appgrid">
       <div class="appcard">
         <div class="name">api-sso <span class="tag new">mới</span></div>
-        <span class="role">auth.xaydung.vn — chủ sở hữu duy nhất của danh tính</span>
+        <span class="role">Service backend thuần — không phục vụ trang HTML nào</span>
         <ol>
-          <li><span class="phasechip">P1</span><span>Service mới, trỏ thẳng DB <code>build_management</code> hiện có — không tạo DB riêng, không nhân bản dữ liệu người dùng.</span></li>
-          <li><span class="phasechip">P1</span><span>Chuyển logic <code>login/refresh/logout//me/reset-password</code> từ api-core sang, giữ nguyên cơ chế cookie hiện tại để không làm gián đoạn build-web.</span></li>
-          <li><span class="phasechip">P1</span><span>Thêm bảng phiên đăng nhập có thể thu hồi — refresh token hiện tại không revoke được.</span></li>
-          <li><span class="phasechip">P2</span><span>Đổi sang ký token bằng cặp khoá riêng (RS256), phát hành khoá công khai để nơi khác tự kiểm tra chữ ký.</span></li>
-          <li><span class="phasechip">P3</span><span>Trang đăng nhập/đăng xuất dùng chung, set cookie ở domain gốc.</span></li>
-          <li><span class="phasechip">P4</span><span>Thêm điểm tra cứu nội bộ để chat đổi mã người dùng lấy tên/avatar hiển thị.</span></li>
+          <li><span class="phasechip">Xong</span><span>Đọc/ghi thẳng <code>build_management</code> hiện có, không tạo DB riêng. 3 bảng mới: <code>auth_session</code>, <code>auth_refresh_token</code>, <code>password_reset_token</code> (migration <code>.sql</code> đánh số, idempotent).</span></li>
+          <li><span class="phasechip">Xong</span><span>Route: <code>/login</code>, <code>/refresh</code>, <code>/logout</code>, <code>/me</code>, <code>/forgot-password</code>, <code>/reset-password-confirm</code>. Ký token RS256, phát khoá công khai ở <code>/.well-known/jwks.json</code> — không còn secret dùng chung.</span></li>
+          <li><span class="phasechip">Xong</span><span>Đăng nhập bằng tài khoản/email/số điện thoại — tra bằng SQL thuần <code>resolveUsername</code> trước khi gọi lại đúng stored procedure gốc (không sửa stored procedure).</span></li>
+          <li><span class="phasechip">Xong</span><span>"Ghi nhớ đăng nhập": không tick → access 15 phút/refresh 7 ngày, cookie session (mất khi đóng trình duyệt); có tick → access 1 ngày/refresh 30 ngày, cookie persistent.</span></li>
+          <li><span class="phasechip">Xong</span><span>Quên mật khẩu thật: token ngẫu nhiên, chỉ lưu SHA-256 hash trong DB, hạn 1 giờ, dùng 1 lần — không gửi mật khẩu ngẫu nhiên qua email.</span></li>
+          <li><span class="phasechip">Xong</span><span>Private key RS256 <b>không</b> bake vào image — mount volume lúc chạy, đúng thực hành cho secret.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard">
+        <div class="name">sso-web <span class="tag new">mới — ngoài kế hoạch gốc</span></div>
+        <span class="role">Frontend độc lập, port/domain riêng — như build-web</span>
+        <ol>
+          <li><span class="phasechip">Xong</span><span>Vite + React + antd, build image riêng, publish port riêng — không còn đi qua api-gateway để phục vụ trang.</span></li>
+          <li><span class="phasechip">Xong</span><span>Gọi API cross-origin sang api-gateway thật (không phải same-origin) — gateway có CORS riêng cho origin này (<code>SSO_ORIGIN</code>, tách khỏi <code>CORS_ORIGIN</code> của build-web).</span></li>
+          <li><span class="phasechip">Xong</span><span>Giao diện copy chính xác build-web: gradient, Lottie animation, toast "Đăng nhập thành công" khớp animation gốc, theo dark/light qua cookie <code>theme_mode</code> dùng chung domain cha.</span></li>
+          <li><span class="phasechip">Xong</span><span>Form quên mật khẩu + trang đổi mật khẩu mới (đọc <code>?token=</code> từ link email) — chặn open-redirect: chỉ theo <code>redirect</code> nếu là path nội bộ hoặc domain con được whitelist lúc build.</span></li>
         </ol>
       </div>
 
       <div class="appcard">
         <div class="name">api-core</div>
-        <span class="role">Giữ nguyên vai trò: quản lý người dùng &amp; phân quyền</span>
+        <span class="role">Vẫn giữ user/role/branch/department — không còn giữ auth</span>
         <ol>
-          <li><span class="phasechip">P1</span><span>Gỡ route đăng nhập/đăng xuất — chuyển hẳn sang api-sso, tránh hai nơi cùng phát hành token.</span></li>
-          <li><span class="phasechip">P1</span><span>Giữ nguyên toàn bộ CRUD người dùng, vai trò, quyền — api-sso chỉ đọc, không ghi nghiệp vụ này.</span></li>
+          <li><span class="phasechip">Xong</span><span>Route <code>login/refresh/logout/me</code> cũ trả HTTP 410, kèm thông tin trỏ sang api-sso — không xoá hẳn để caller cũ nhận lỗi rõ ràng thay vì 404 mơ hồ.</span></li>
+          <li><span class="phasechip">Xong</span><span>Giữ nguyên toàn bộ CRUD người dùng/vai trò/quyền — api-sso chỉ đọc lại qua stored procedure có sẵn.</span></li>
         </ol>
       </div>
 
       <div class="appcard">
         <div class="name">api-gateway</div>
-        <span class="role">api.xaydung.vn — cổng vào duy nhất</span>
+        <span class="role">Cổng vào duy nhất cho mọi gọi API</span>
         <ol>
-          <li><span class="phasechip">P2</span><span>Đổi cách kiểm tra token: từ so khớp một khoá bí mật dùng chung sang kiểm chữ ký bằng khoá công khai.</span></li>
-          <li><span class="phasechip">P3</span><span>Cho phép nhiều nguồn gọi đến (nhiều subdomain) thay vì chỉ một origin như hiện tại.</span></li>
-          <li><span class="phasechip">P4</span><span>Nối tuyến đường đã có sẵn cho chat vào một dịch vụ chat thật (khung đã dựng sẵn, chỉ chưa gắn).</span></li>
-          <li><span class="phasechip">P5</span><span>Thêm tuyến đường tương tự cho meeting.</span></li>
+          <li><span class="phasechip">Xong</span><span>Verify JWT qua JWKS (<code>jwks-rsa</code>, <code>JWT_JWKS_URI</code> bắt buộc) thay vì so khớp secret chung.</span></li>
+          <li><span class="phasechip">Xong</span><span>6 đường tắt rewrite sang <code>/api-sso/*</code>: <code>/api/login</code>, <code>/refresh</code>, <code>/logout</code>, <code>/me</code>, <code>/forgot-password</code>, <code>/reset-password-confirm</code>.</span></li>
+          <li><span class="phasechip">Xong</span><span>Nguyên tắc hạ tầng đã áp dụng: chỉ app frontend (build-web, sso-web) và chính api-gateway mới publish port ra ngoài — api-core/api-task-management/api-sso chỉ <code>expose</code> nội bộ.</span></li>
+          <li><span class="phasechip todo">Chưa</span><span>Route cho chat/meeting vẫn chỉ là khung khai báo sẵn trong config, chưa có service thật để nối.</span></li>
         </ol>
       </div>
 
       <div class="appcard">
         <div class="name">build-web</div>
-        <span class="role">app.xaydung.vn — finance + task</span>
+        <span class="role">finance + task — không còn tự render trang login</span>
         <ol>
-          <li><span class="phasechip">P3</span><span>Bỏ trang đăng nhập riêng trong ứng dụng. Lúc khởi động, hỏi api-sso đã đăng nhập chưa; chưa thì chuyển sang trang đăng nhập chung.</span></li>
-          <li><span class="phasechip">P3</span><span>Nút đăng xuất gọi sang api-sso thay vì api-core như hiện tại.</span></li>
+          <li><span class="phasechip">Xong</span><span>Chưa đăng nhập → redirect cross-origin sang sso-web (<code>window.location.href</code>, không dùng được <code>&lt;Navigate&gt;</code> của router vì khác origin), kèm <code>?redirect=</code> quay lại đúng trang.</span></li>
+          <li><span class="phasechip">Xong</span><span>Đăng xuất, gọi <code>/me</code> đều qua api-sso (path tương đối qua gateway) thay vì api-core.</span></li>
+          <li><span class="phasechip">Xong</span><span>Cookie <code>theme_mode</code> đổi sang domain cha (không phải host-only) để sso-web đọc được, hiện đúng dark/light lúc mới vào trang login.</span></li>
+        </ol>
+      </div>
+
+      <div class="appcard pending">
+        <div class="name">chat / meeting <span class="tag pending">chưa bắt đầu</span></div>
+        <span class="role">chat_management — vẫn dùng bảng người dùng riêng</span>
+        <ol>
+          <li><span class="phasechip todo">Chưa</span><span>Chưa đụng gì tới — vẫn tự xác thực bằng bảng <code>users</code>/<code>refresh_tokens</code> riêng trong <code>chat_management</code>, độc lập hoàn toàn với api-sso.</span></li>
+          <li><span class="phasechip todo">Chưa</span><span>Việc gộp danh tính (xoá dữ liệu test, tạo lại theo <code>system_users</code>) — xem phát hiện DB thật ở tài liệu riêng — chưa thực hiện.</span></li>
         </ol>
       </div>
 
       <div class="appcard">
-        <div class="name">chat</div>
-        <span class="role">chat.xaydung.vn</span>
+        <div class="name">Hạ tầng sandbox</div>
+        <span class="role">Mô phỏng domain cha bằng OrbStack — không phải production thật</span>
         <ol>
-          <li><span class="phasechip">P4</span><span>Xoá sạch bảng người dùng, refresh token, và dữ liệu hội thoại/cuộc họp test hiện có — không cần giữ lại gì vì toàn bộ là dữ liệu thử.</span></li>
-          <li><span class="phasechip">P4</span><span>Bỏ khả năng tự đăng nhập ngay từ bước này (không phải đợi tới P5) — không còn ràng buộc phải tương thích tài khoản cũ.</span></li>
-          <li><span class="phasechip">P4</span><span>Người dùng thật đầu tiên đăng nhập qua api-sso: chat tự tạo dòng nội bộ + mã ánh xạ, không cần thao tác tay.</span></li>
-          <li><span class="phasechip">P5</span><span>Nơi cần hiện tên/avatar: tra cứu qua api-sso theo mã người dùng, không tự lưu hồ sơ riêng nữa.</span></li>
-        </ol>
-      </div>
-
-      <div class="appcard">
-        <div class="name">meeting <span class="tag existing">đã có sẵn trong chat_management</span></div>
-        <span class="role">meeting.xaydung.vn — không phải xây từ đầu</span>
-        <ol>
-          <li><span class="phasechip">P4</span><span>Đi đúng nhịp với chat — cùng nơi lưu dữ liệu, cùng đợt xoá dữ liệu test, cùng thời điểm go-live.</span></li>
-          <li><span class="phasechip">P5</span><span>Bỏ trang đăng nhập riêng (nếu có), dùng lại phiên đăng nhập chung.</span></li>
-          <li><span class="phasechip">P5</span><span>Nối vào cổng vào chung qua tuyến đường riêng cho meeting.</span></li>
-        </ol>
-      </div>
-
-      <div class="appcard">
-        <div class="name">Hạ tầng chung</div>
-        <span class="role">Domain · mạng nội bộ · chứng chỉ</span>
-        <ol>
-          <li><span class="phasechip">P0</span><span>Một domain gốc, năm subdomain: ứng dụng chính, chat, meeting, trang đăng nhập chung, cổng vào.</span></li>
-          <li><span class="phasechip">P0</span><span>Chứng chỉ bảo mật dạng wildcard cho cả domain gốc, khỏi xin lẻ từng subdomain.</span></li>
-          <li><span class="phasechip">P1</span><span>Thêm service api-sso vào hạ tầng chạy hiện có, cùng mạng nội bộ với các service khác.</span></li>
+          <li><span class="phasechip">Xong</span><span>Domain <code>*.sso-sandbox.orb.local</code> (OrbStack tự cấp cho container có publish port) mô phỏng đúng mô hình "1 domain cha, nhiều subdomain" của production — cookie <code>Domain=.sso-sandbox.orb.local</code> dùng chung được giữa build-web/sso-web/gateway.</span></li>
+          <li><span class="phasechip">Xong</span><span>DB sandbox clone từ dữ liệu test thật (<code>pg_dump</code> read-only), migration api-sso chạy tự động lúc khởi tạo container, idempotent — chạy lại nhiều lần không lỗi.</span></li>
+          <li><span class="phasechip todo">Chưa</span><span>Domain thật + chứng chỉ wildcard cho production — chưa làm, vẫn dùng domain/chứng chỉ hiện có của từng service.</span></li>
         </ol>
       </div>
     </div>
   </section>
 
   <section id="doc2">
-    <div class="docmark"><span class="num">Tài liệu 2</span><h2>Kiến trúc hệ thống &amp; luồng xử lý</h2></div>
-    <p class="lede">Trạng thái đích sau khi hoàn tất các pha ở Tài liệu 1.</p>
+    <div class="docmark"><span class="num">Tài liệu 2</span><h2>Kiến trúc thật (sandbox)</h2></div>
+    <p class="lede">Sơ đồ dưới đây là trạng thái đã chạy và kiểm thử được — không phải trạng thái đích lý thuyết.</p>
 
-    <h3 id="kien-truc">Sơ đồ kiến trúc tổng thể</h3>
+    <h3 id="kien-truc">Sơ đồ kiến trúc</h3>
     <div class="diagram">
       <pre class="mermaid">
 flowchart TB
-  subgraph Client["Trình duyệt · 1 domain gốc xaydung.vn"]
-    BW["app.xaydung.vn<br/>build-web · finance + task"]
-    CH["chat.xaydung.vn<br/>chat"]
-    MT["meeting.xaydung.vn<br/>meeting"]
+  subgraph Client["Trình duyệt — mỗi frontend 1 domain/port riêng, publish port ra ngoài"]
+    BW["build-web<br/>finance + task"]
+    SW["sso-web (MỚI)<br/>login · quên mật khẩu · đổi mật khẩu"]
   end
 
-  SSO["auth.xaydung.vn<br/>api-sso<br/>login · refresh · logout · /me · JWKS"]
-  GW["api.xaydung.vn<br/>api-gateway<br/>verify JWT qua JWKS"]
+  GW["api-gateway<br/>verify JWT qua JWKS<br/>CORS riêng theo từng origin (SSO_ORIGIN ≠ CORS_ORIGIN)"]
 
-  subgraph Services["Dịch vụ nghiệp vụ"]
-    APICORE["api-core<br/>user CRUD · RBAC"]
+  subgraph Internal["Chỉ expose nội bộ — KHÔNG publish port ra internet"]
+    APICORE["api-core<br/>user/role CRUD · login trả 410"]
     APITASK["api-task-management<br/>công trình · task"]
-    CHATSVC["chat-service<br/>chat + meeting"]
+    APISSO["api-sso (MỚI)<br/>login · refresh · logout · me<br/>forgot-password · JWKS"]
   end
 
-  subgraph DB["PostgreSQL"]
-    DB1[("build_management<br/>danh tính · task · finance")]
-    DB2[("chat_management<br/>hội thoại · cuộc họp")]
-  end
+  DB1[("build_management<br/>+ auth_session / auth_refresh_token /<br/>password_reset_token (MỚI)")]
+  DB2[("chat_management<br/>chưa đụng tới")]
+  CHAT["chat / meeting<br/>CHƯA tích hợp SSO"]
 
-  BW --> GW
-  CH --> GW
-  MT --> GW
-  BW -. chưa có session .-> SSO
-  CH -. chưa có session .-> SSO
-  MT -. chưa có session .-> SSO
+  BW -->|API qua gateway| GW
+  SW -->|API cross-origin, CORS riêng| GW
+  BW -. chưa có session .-> SW
   GW --> APICORE
   GW --> APITASK
-  GW --> CHATSVC
-  SSO --> DB1
+  GW --> APISSO
+  APISSO --> DB1
   APICORE --> DB1
   APITASK --> DB1
-  CHATSVC --> DB2
-  CHATSVC -. đọc tên/avatar theo mã người dùng .-> SSO
+  CHAT -.-> DB2
       </pre>
-      <p class="cap">Một nơi giữ danh tính (build_management), một nơi phát hành phiên đăng nhập (api-sso), một cổng vào kiểm tra token (api-gateway). Chat/meeting chỉ còn giữ dữ liệu nghiệp vụ của mình.</p>
+      <p class="cap">Khác biệt lớn nhất so với bản kế hoạch gốc: sso-web KHÔNG đi qua gateway để phục vụ trang (chỉ gọi API cross-origin qua gateway) — gateway chỉ còn lo verify token + route API, không phục vụ bất kỳ HTML nào. chat/meeting vẫn đứng ngoài, chưa tích hợp.</p>
     </div>
 
-    <h3 id="luong-login">Luồng đăng nhập lần đầu trong phiên trình duyệt</h3>
+    <h3 id="luong-login">Luồng đăng nhập — đã test end-to-end</h3>
     <div class="diagram">
       <pre class="mermaid">
 sequenceDiagram
   actor U as Người dùng
-  participant App as App (build-web / chat / meeting)
-  participant SSO as api-sso (auth.xaydung.vn)
-  participant DB as build_management
+  participant BW as build-web
+  participant SW as sso-web
+  participant GW as api-gateway
+  participant SSO as api-sso
 
-  U->>App: Mở app lần đầu trong phiên
-  App->>SSO: GET /me (kèm cookie hiện có, nếu có)
-  SSO-->>App: 401 chưa có session
-  App-->>U: Chuyển sang auth.xaydung.vn/login?redirect=...
-  U->>SSO: Nhập tài khoản, mật khẩu
-  SSO->>DB: Xác thực + load vai trò/quyền
-  DB-->>SSO: Hợp lệ
-  SSO-->>U: Set-Cookie access/refresh (domain gốc) + chuyển về redirect
-  U->>App: Quay lại app, cookie đã có
-  App->>SSO: GET /me
-  SSO-->>App: 200, user + functions
-  Note over U,App: Mở app thứ hai trong cùng phiên -> bước 2 trả 200 ngay, không còn thấy màn đăng nhập
+  U->>BW: Mở app, chưa có cookie
+  BW->>GW: GET /me
+  GW-->>BW: 401
+  BW-->>U: window.location sang sso-web (?redirect=...)
+  U->>SW: Nhập tài khoản/email/sđt + mật khẩu (+ tick "ghi nhớ")
+  SW->>GW: POST /api/login (cross-origin)
+  GW->>SSO: forward, verify CORS theo SSO_ORIGIN
+  SSO->>SSO: resolveUsername rồi CALL stored procedure gốc
+  SSO-->>GW: Set-Cookie access/refresh (Domain=.domain-cha, remember ? 30 ngày : session)
+  GW-->>SW: 200
+  SW-->>U: Toast "Đăng nhập thành công" rồi redirect
+  U->>BW: Quay lại, cookie đã có sẵn → /me trả 200 ngay
       </pre>
-      <p class="cap">Đăng nhập ở app nào cũng đi qua đúng một trang. Toàn bộ subdomain cùng domain gốc nên cookie dùng chung được.</p>
+      <p class="cap">Test thật bằng curl qua domain OrbStack + thao tác tay trên trình duyệt, cả 2 trường hợp tick/không tick "ghi nhớ" — soi đúng header Set-Cookie (có/không Max-Age).</p>
     </div>
 
-    <h3 id="luong-api">Luồng gọi API sau khi đã đăng nhập</h3>
+    <h3 id="luong-quen-mk">Luồng quên mật khẩu — tính năng thật, không phải mock</h3>
     <div class="diagram">
       <pre class="mermaid">
 sequenceDiagram
-  participant App as App
-  participant GW as api-gateway
-  participant SVC as Service nghiệp vụ
+  actor U as Người dùng
+  participant SW as sso-web
+  participant SSO as api-sso
+  participant DB as password_reset_token
 
-  App->>GW: Request kèm cookie access token
-  GW->>GW: Verify chữ ký RS256 (cache khoá công khai theo kid)
-  alt Token hợp lệ
-    GW->>SVC: Forward kèm mã người dùng đã xác minh
-    SVC-->>GW: Kết quả
-    GW-->>App: 200
-  else Token hết hạn
-    GW-->>App: 401
-    App->>GW: POST /refresh (refresh token cookie)
-    GW-->>App: Token mới, tự gửi lại request gốc
-  end
+  U->>SW: Nhập email ở "Quên mật khẩu"
+  SW->>SSO: POST /forgot-password {email}
+  SSO->>SSO: kiểm tra email tồn tại (không lộ qua response — luôn trả cùng thông báo)
+  SSO->>DB: tạo token ngẫu nhiên, lưu SHA-256(token), hạn 1 giờ
+  SSO-->>U: Gửi email thật, link kèm token thô
+  U->>SW: Mở link /reset-password?token=..., nhập mật khẩu mới
+  SW->>SSO: POST /reset-password-confirm {token, newPassword}
+  SSO->>DB: hash lại token, đối chiếu, kiểm used_at + hạn
+  DB-->>SSO: hợp lệ, chưa dùng
+  SSO->>SSO: đổi mật khẩu, đánh dấu used_at (token dùng 1 lần)
+  SSO-->>SW: 200 → chuyển sang trang đăng nhập
       </pre>
-      <p class="cap">Gateway không còn cần biết khoá bí mật dùng chung — chỉ giữ khoá công khai. Lộ một service không còn nghĩa là giả mạo được token toàn hệ.</p>
+      <p class="cap">Verify thật bằng cách tự tạo cặp raw-token/SHA-256-hash khớp nhau (SMTP sandbox là giả) — xác nhận: mật khẩu cũ hết hiệu lực, mật khẩu mới đăng nhập được, dùng lại token cũ bị từ chối.</p>
     </div>
 
     <h3>Sở hữu dữ liệu — trước / sau</h3>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Dữ liệu</th><th>Trước</th><th>Sau</th></tr></thead>
+        <thead><tr><th>Dữ liệu</th><th>Trước</th><th>Sau (đã build)</th></tr></thead>
         <tbody>
-          <tr><td>Tài khoản build-web</td><td>build_management</td><td>Không đổi</td></tr>
-          <tr><td>Tài khoản chat/meeting</td><td>Bảng người dùng riêng trong chat_management</td><td>Không còn xác thực riêng — chỉ giữ mã tham chiếu sang danh tính build</td></tr>
-          <tr><td>Phiên đăng nhập</td><td>Không có nơi lưu — không thu hồi được</td><td>Có bảng phiên riêng, thu hồi được từng thiết bị</td></tr>
-          <tr><td>Hội thoại / tin nhắn / cuộc họp</td><td>chat_management</td><td>Không đổi vai trò — chỉ đổi cách xác định người dùng</td></tr>
-          <tr><td>Ai được vào app nào</td><td>Ngầm định, có tài khoản là vào được</td><td>Có danh sách rõ ràng theo từng app</td></tr>
+          <tr><td>Tài khoản build-web</td><td>build_management, api-core xác thực</td><td>Vẫn build_management, api-sso xác thực</td></tr>
+          <tr><td>Phiên đăng nhập</td><td>Không có nơi lưu — không thu hồi được</td><td><code>auth_session</code>/<code>auth_refresh_token</code> — thu hồi được lúc logout</td></tr>
+          <tr><td>Quên mật khẩu</td><td>Chưa có</td><td><code>password_reset_token</code>, hash 1 chiều, hạn 1 giờ, dùng 1 lần</td></tr>
+          <tr><td>Trang đăng nhập</td><td>Mỗi app tự render</td><td>Dùng chung sso-web, redirect cross-origin</td></tr>
+          <tr><td>Tài khoản chat/meeting</td><td>Bảng người dùng riêng trong chat_management</td><td><b>Chưa đổi</b> — vẫn tách biệt, ngoài phạm vi đã làm</td></tr>
         </tbody>
       </table>
     </div>
-
-    <h3>Xử lý dữ liệu test — cách clean nhất</h3>
-    <p>Toàn bộ dữ liệu hiện tại (18 user build, 21 user chat, 26 cuộc họp, 608 lượt tham gia hội thoại) là dữ liệu test. Vì không có người dùng thật đang phụ thuộc, <b>không cần bước đối chiếu/mapping</b> — cách sạch nhất là xoá và tạo lại, không phải di trú.</p>
-    <ol class="steps">
-      <li>Chốt trước ngày go-live SSO — sau mốc này không sinh thêm dữ liệu test nữa.</li>
-      <li>Xoá sạch bảng người dùng + dữ liệu phụ thuộc (hội thoại, tin nhắn, cuộc họp mẫu) trong <code>chat_management</code>.</li>
-      <li>Trong <code>build_management</code>, chỉ xoá tài khoản người dùng test — giữ nguyên khung vai trò/quyền/chức năng đã cấu hình (không phải dữ liệu test, là cấu hình hệ thống).</li>
-      <li>Tạo tài khoản thật đầu tiên trực tiếp trên <code>build_management</code> qua giao diện quản trị hiện có.</li>
-      <li>Bật api-sso. Người dùng thật đăng nhập lần đầu ở chat/meeting — hệ thống tự tạo hồ sơ nội bộ tương ứng, không cần thao tác tay.</li>
-    </ol>
-    <div class="callout warn"><b>Trước khi xoá:</b> xác nhận lại với người phụ trách chat/meeting rằng không có dữ liệu thật nào lẫn trong 21 tài khoản/26 cuộc họp hiện có — thao tác xoá không hoàn tác được.</div>
   </section>
 
-  <footer>XDHY · ConsHY · Tài liệu nội bộ · Chưa triển khai code — dùng để thống nhất hướng trước khi bắt tay implement</footer>
+  <section id="checklist">
+    <div class="docmark"><span class="num">Quan trọng</span><h2>Checklist trước khi lên production</h2></div>
+    <p class="lede">Toàn bộ việc trên làm trong sandbox tách biệt (network/DB/domain riêng, không đụng hệ thống thật). Nhưng code đã sửa nằm trên <b>nhánh nguồn dùng chung</b> với production (<code>api-core</code>, <code>api-task-management</code>, <code>api-gateway</code>) — nếu deploy nhánh này lên thật mà bỏ qua các bước dưới, hệ thống thật sẽ hỏng ngay.</p>
+    <div class="callout warn">
+      <b>Rủi ro cụ thể:</b> <code>api-core</code> thật sẽ trả 410 cho mọi request login/refresh/logout/me (vì code đã đổi), trong khi <code>api-sso</code>/<code>api-gateway</code>/<code>api-task-management</code> thật lại chưa có biến môi trường <code>JWT_JWKS_URI</code> — build-web thật sẽ không đăng nhập được cho tới khi hoàn tất đủ các bước dưới.
+    </div>
+    <ol class="steps">
+      <li>Chạy 3 migration <code>.sql</code> của <code>api-sso</code> (<code>auth_session</code>, <code>auth_refresh_token</code>, <code>password_reset_token</code>) lên <code>build_management</code> thật — đã test idempotent ở sandbox, chạy đúng file, không viết lại tay.</li>
+      <li>Sinh cặp khoá RS256 thật cho production (khác khoá sandbox), thêm service <code>api-sso</code> vào <code>docker-compose.yml</code> thật, mount private key qua volume — không bake vào image.</li>
+      <li>Thêm <code>JWT_JWKS_URI</code> (trỏ JWKS endpoint của api-sso thật) vào <code>.env</code> thật của <code>api-gateway</code> và <code>api-task-management</code> — thiếu biến này 2 service không start được (đã chặn bằng <code>requireEnv</code>).</li>
+      <li>Cấu hình domain/CORS thật cho sso-web (<code>SSO_ORIGIN</code> ở gateway thật) và domain cookie chung (<code>COOKIE_DOMAIN</code>) — khác domain OrbStack chỉ dùng cho sandbox.</li>
+      <li>Deploy <code>sso-web</code> như 1 app frontend thật (build image, publish port, domain riêng) — chưa có trong hạ tầng production hiện tại.</li>
+      <li>Cấu hình SMTP thật cho api-sso (hiện sandbox dùng thông tin giả) để email quên mật khẩu gửi được.</li>
+      <li>Deploy đồng thời tất cả các thay đổi trên trong 1 lượt — không deploy <code>api-core</code>/<code>api-task-management</code>/<code>api-gateway</code> (đã đổi code) mà thiếu <code>api-sso</code>, sẽ gây gián đoạn đăng nhập thật ngay lập tức.</li>
+    </ol>
+  </section>
+
+  <footer>XDHY · ConsHY · Đã build + test trong sandbox (docker-compose.sso-sandbox.yml) · CHƯA deploy production</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
