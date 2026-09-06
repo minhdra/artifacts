@@ -138,12 +138,15 @@
         <div class="name">api-sso <span class="tag new">mới</span></div>
         <span class="role">Service backend thuần — không phục vụ trang HTML nào</span>
         <ol>
-          <li><span class="phasechip">Xong</span><span>Đọc/ghi thẳng <code>build_management</code> hiện có, không tạo DB riêng. 3 bảng mới: <code>auth_session</code>, <code>auth_refresh_token</code>, <code>password_reset_token</code> (migration <code>.sql</code> đánh số, idempotent).</span></li>
+          <li><span class="phasechip">Xong</span><span>Đọc/ghi thẳng <code>build_management</code> hiện có, không tạo DB riêng. 3 bảng mới: <code>a_session</code>, <code>a_refresh_token</code>, <code>a_password_reset_token</code> (migration <code>.sql</code> đánh số, idempotent).</span></li>
           <li><span class="phasechip">Xong</span><span>Route: <code>/login</code>, <code>/refresh</code>, <code>/logout</code>, <code>/me</code>, <code>/forgot-password</code>, <code>/reset-password-confirm</code>. Ký token RS256, phát khoá công khai ở <code>/.well-known/jwks.json</code> — không còn secret dùng chung.</span></li>
           <li><span class="phasechip">Xong</span><span>Đăng nhập bằng tài khoản/email/số điện thoại — tra bằng SQL thuần <code>resolveUsername</code> trước khi gọi lại đúng stored procedure gốc (không sửa stored procedure).</span></li>
           <li><span class="phasechip">Xong</span><span>"Ghi nhớ đăng nhập": không tick → access 15 phút/refresh 7 ngày, cookie session (mất khi đóng trình duyệt); có tick → access 1 ngày/refresh 30 ngày, cookie persistent.</span></li>
           <li><span class="phasechip">Xong</span><span>Quên mật khẩu thật: token ngẫu nhiên, chỉ lưu SHA-256 hash trong DB, hạn 1 giờ, dùng 1 lần — không gửi mật khẩu ngẫu nhiên qua email.</span></li>
           <li><span class="phasechip">Xong</span><span>Private key RS256 <b>không</b> bake vào image — mount volume lúc chạy, đúng thực hành cho secret.</span></li>
+          <li><span class="phasechip">Xong</span><span>Endpoint quản lý tài khoản: <code>GET/PUT /account/profile</code>, <code>POST /account/change-password</code>, <code>GET /account/sessions</code> + <code>/sessions/revoke</code>, <code>POST /account/avatar</code> (upload ảnh), <code>GET /apps</code>. Tất cả qua middleware <code>requireAuth</code>.</span></li>
+          <li><span class="phasechip">Xong</span><span>Tầng validate (zod) + Swagger UI <code>/api-sso/docs</code> — copy khuôn từ api-core/api-task, mọi route khai <code>defineRoute()</code>.</span></li>
+          <li><span class="phasechip">Xong</span><span>Nghiệp vụ account nằm trong <b>stored procedure</b> (đúng quy ước DB): <code>a_GetAccountProfile</code>, <code>a_UpdateSelfProfile</code>, <code>a_SetAvatar</code>, <code>a_GetUserPasswordHash</code>, <code>a_SetUserPassword</code>. Verify mật khẩu cũ bằng bcrypt ở tầng app (bcrypt không chạy trong SQL). Bảng + proc mới đều tiền tố <code>a_</code> (module auth/SSO) cho nhất quán với <code>t_</code> của task.</span></li>
         </ol>
       </div>
 
@@ -151,10 +154,12 @@
         <div class="name">sso-web <span class="tag new">mới — ngoài kế hoạch gốc</span></div>
         <span class="role">Frontend độc lập, port/domain riêng — như build-web</span>
         <ol>
-          <li><span class="phasechip">Xong</span><span>Vite + React + antd, build image riêng, publish port riêng — không còn đi qua api-gateway để phục vụ trang.</span></li>
-          <li><span class="phasechip">Xong</span><span>Gọi API cross-origin sang api-gateway thật (không phải same-origin) — gateway có CORS riêng cho origin này (<code>SSO_ORIGIN</code>, tách khỏi <code>CORS_ORIGIN</code> của build-web).</span></li>
-          <li><span class="phasechip">Xong</span><span>Giao diện copy chính xác build-web: gradient, Lottie animation, toast "Đăng nhập thành công" khớp animation gốc, theo dark/light qua cookie <code>theme_mode</code> dùng chung domain cha.</span></li>
-          <li><span class="phasechip">Xong</span><span>Form quên mật khẩu + trang đổi mật khẩu mới (đọc <code>?token=</code> từ link email) — chặn open-redirect: chỉ theo <code>redirect</code> nếu là path nội bộ hoặc domain con được whitelist lúc build.</span></li>
+          <li><span class="phasechip">Xong</span><span>Vite + React + antd + react-router + zustand, build image riêng, publish port riêng — không còn đi qua api-gateway để phục vụ trang.</span></li>
+          <li><span class="phasechip">Xong</span><span>Gọi API cross-origin sang api-gateway qua 1 tiền tố <code>/api/sso/*</code> → <code>/api-sso/*</code> — gateway có CORS riêng cho origin này (<code>SSO_ORIGIN</code>, tách khỏi <code>CORS_ORIGIN</code> của build-web).</span></li>
+          <li><span class="phasechip">Xong</span><span>Giao diện đăng nhập copy chính xác build-web: gradient, Lottie animation, toast "Đăng nhập thành công" khớp animation gốc, theo dark/light qua cookie <code>theme_mode</code> dùng chung domain cha.</span></li>
+          <li><span class="phasechip">Xong</span><span>Form quên mật khẩu + trang đổi mật khẩu (đọc <code>?token=</code> từ link email) — chặn open-redirect.</span></li>
+          <li><span class="phasechip">Xong</span><span><b>Trang chủ</b> (khi login không có redirect): danh sách app truy cập được. Header có menu [Quản lý tài khoản, Đăng xuất].</span></li>
+          <li><span class="phasechip">Xong</span><span><b>Trang Quản lý tài khoản</b> kiểu Google: Thông tin cá nhân (sửa tên/email/sđt/giới tính/ngày sinh + upload avatar), Mật khẩu (đổi), Phiên đăng nhập (liệt kê thiết bị + thu hồi từng phiên).</span></li>
         </ol>
       </div>
 
@@ -172,8 +177,8 @@
         <span class="role">Cổng vào duy nhất cho mọi gọi API</span>
         <ol>
           <li><span class="phasechip">Xong</span><span>Verify JWT qua JWKS (<code>jwks-rsa</code>, <code>JWT_JWKS_URI</code> bắt buộc) thay vì so khớp secret chung.</span></li>
-          <li><span class="phasechip">Xong</span><span>6 đường tắt rewrite sang <code>/api-sso/*</code>: <code>/api/login</code>, <code>/refresh</code>, <code>/logout</code>, <code>/me</code>, <code>/forgot-password</code>, <code>/reset-password-confirm</code>.</span></li>
-          <li><span class="phasechip">Xong</span><span>Mở đường công khai (KHÔNG verify token) cho Swagger/OpenAPI: <code>/api/docs/api-core/</code> và <code>/api/docs/api-task/</code> (tiền tố riêng, không đè route <code>/api/api-core/*</code>). Mở bằng URL có <code>/</code> cuối.</span></li>
+          <li><span class="phasechip">Xong</span><span>1 tiền tố <code>/api/sso/*</code> → <code>/api-sso/*</code> cho toàn bộ sso-web (login + account/*). 6 đường tắt cũ (<code>/api/login</code>...) giữ cho build-web.</span></li>
+          <li><span class="phasechip">Xong</span><span>Mở đường công khai (KHÔNG verify token) cho Swagger/OpenAPI: <code>/api/docs/api-core/</code>, <code>/api/docs/api-task/</code>, <code>/api/docs/api-sso/</code> (tiền tố riêng, không đè route nghiệp vụ). Mở bằng URL có <code>/</code> cuối.</span></li>
           <li><span class="phasechip">Xong</span><span>Nguyên tắc hạ tầng đã áp dụng: chỉ app frontend (build-web, sso-web) và chính api-gateway mới publish port ra ngoài — api-core/api-task-management/api-sso chỉ <code>expose</code> nội bộ.</span></li>
           <li><span class="phasechip todo">Chưa</span><span>Route cho chat/meeting vẫn chỉ là khung khai báo sẵn trong config, chưa có service thật để nối.</span></li>
         </ol>
@@ -231,7 +236,7 @@ flowchart TB
     APISSO["api-sso (MỚI)<br/>login · refresh · logout · me<br/>forgot-password · JWKS"]
   end
 
-  DB1[("build_management<br/>+ auth_session / auth_refresh_token /<br/>password_reset_token (MỚI)")]
+  DB1[("build_management<br/>+ a_session / a_refresh_token /<br/>a_password_reset_token (MỚI)")]
   DB2[("chat_management<br/>chưa đụng tới")]
   CHAT["chat / meeting<br/>CHƯA tích hợp SSO"]
 
@@ -282,7 +287,7 @@ sequenceDiagram
   actor U as Người dùng
   participant SW as sso-web
   participant SSO as api-sso
-  participant DB as password_reset_token
+  participant DB as a_password_reset_token
 
   U->>SW: Nhập email ở "Quên mật khẩu"
   SW->>SSO: POST /forgot-password {email}
@@ -305,8 +310,8 @@ sequenceDiagram
         <thead><tr><th>Dữ liệu</th><th>Trước</th><th>Sau (đã build)</th></tr></thead>
         <tbody>
           <tr><td>Tài khoản build-web</td><td>build_management, api-core xác thực</td><td>Vẫn build_management, api-sso xác thực</td></tr>
-          <tr><td>Phiên đăng nhập</td><td>Không có nơi lưu — không thu hồi được</td><td><code>auth_session</code>/<code>auth_refresh_token</code> — thu hồi được lúc logout</td></tr>
-          <tr><td>Quên mật khẩu</td><td>Chưa có</td><td><code>password_reset_token</code>, hash 1 chiều, hạn 1 giờ, dùng 1 lần</td></tr>
+          <tr><td>Phiên đăng nhập</td><td>Không có nơi lưu — không thu hồi được</td><td><code>a_session</code>/<code>a_refresh_token</code> — thu hồi được lúc logout</td></tr>
+          <tr><td>Quên mật khẩu</td><td>Chưa có</td><td><code>a_password_reset_token</code>, hash 1 chiều, hạn 1 giờ, dùng 1 lần</td></tr>
           <tr><td>Trang đăng nhập</td><td>Mỗi app tự render</td><td>Dùng chung sso-web, redirect cross-origin</td></tr>
           <tr><td>Tài khoản chat/meeting</td><td>Bảng người dùng riêng trong chat_management</td><td><b>Chưa đổi</b> — vẫn tách biệt, ngoài phạm vi đã làm</td></tr>
         </tbody>
@@ -321,7 +326,7 @@ sequenceDiagram
       <b>Rủi ro cụ thể:</b> <code>api-gateway</code> và <code>api-task-management</code> thật đã chuyển sang verify token qua JWKS — thiếu biến <code>JWT_JWKS_URI</code> thì 2 service này <b>không start được</b> (chặn bằng <code>requireEnv</code>). Và nếu chưa deploy <code>api-sso</code> + <code>sso-web</code> thì build-web thật không có nơi đăng nhập.
     </div>
     <ol class="steps">
-      <li>Chạy 3 migration <code>.sql</code> của <code>api-sso</code> (<code>auth_session</code>, <code>auth_refresh_token</code>, <code>password_reset_token</code>) lên <code>build_management</code> thật — đã test idempotent ở sandbox, chạy đúng file, không viết lại tay.</li>
+      <li>Chạy 3 migration <code>.sql</code> của <code>api-sso</code> (<code>a_session</code>, <code>a_refresh_token</code>, <code>a_password_reset_token</code>) lên <code>build_management</code> thật — đã test idempotent ở sandbox, chạy đúng file, không viết lại tay.</li>
       <li>Sinh cặp khoá RS256 thật cho production (khác khoá sandbox), thêm service <code>api-sso</code> vào <code>docker-compose.yml</code> thật, mount private key qua volume — không bake vào image.</li>
       <li>Thêm <code>JWT_JWKS_URI</code> (trỏ JWKS endpoint của api-sso thật) vào <code>.env</code> thật của <code>api-gateway</code> và <code>api-task-management</code> — thiếu biến này 2 service không start được (đã chặn bằng <code>requireEnv</code>).</li>
       <li>Cấu hình domain/CORS thật cho sso-web (<code>SSO_ORIGIN</code> ở gateway thật) và domain cookie chung (<code>COOKIE_DOMAIN</code>) — khác domain OrbStack chỉ dùng cho sandbox.</li>
