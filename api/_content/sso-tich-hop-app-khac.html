@@ -93,6 +93,12 @@
 
   .tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; vertical-align:1px; }
   .tag.pending{ color:var(--bad); background:var(--bad-soft); }
+  .tag.new{ color:var(--good); background:var(--good-soft); }
+
+  .checklist{ list-style:none; margin:16px 0 0; padding:0; max-width:74ch; }
+  .checklist li{ display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px dashed var(--line); font-size:14px; }
+  .checklist li:last-child{ border-bottom:none; }
+  .checklist .box{ flex-shrink:0; width:16px; height:16px; margin-top:2px; border:1.5px solid var(--line); border-radius:4px; }
 
   footer{ margin-top:64px; padding-top:18px; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
 </style>
@@ -104,36 +110,65 @@
 
   <span class="eyebrow">Hướng dẫn tích hợp · Hệ thống XDHY</span>
   <h1 class="title">Tích hợp SSO cho app khác</h1>
-  <p class="lead">Dành cho chủ app khác (chat, meeting, app mới sau này) muốn dùng chung đăng nhập với build-web thay vì tự làm auth riêng. Viết theo từng bước, kèm code mẫu thật lấy từ api-sso/api-gateway/api-task-management hiện có.</p>
+  <p class="lead">Dành cho chủ app khác (chat, meeting, app mới sau này) muốn dùng chung đăng nhập với hệ thống hiện có thay vì tự làm auth riêng. Viết theo từng bước, kèm code mẫu thật lấy từ các service đang chạy.</p>
   <div class="metabar">
-    <span>Cập nhật 05/09/2026</span>
-    <span>Phần web: đã chạy thật (tham khảo build-web)</span>
+    <span>Cập nhật 07/09/2026</span>
+    <span>Phần web: đã chạy thật</span>
     <span>Phần mobile: dùng chính các endpoint hiện có, không cần thêm API</span>
+    <span class="tag new" style="margin-left:0">Mới: phân quyền theo app + đồng bộ người dùng</span>
   </div>
 
   <nav class="toc">
     <a href="#tong-quan">Tổng quan</a>
     <a href="#web">Tích hợp web app</a>
+    <a href="#phan-quyen">Phân quyền theo app</a>
+    <a href="#dong-bo">Đồng bộ người dùng</a>
+    <a href="#giao-dien">Giao diện dùng chung</a>
     <a href="#mobile">Tích hợp app mobile</a>
     <a href="#luu-y">Lưu ý chung / lỗi hay gặp</a>
   </nav>
 
   <section id="tong-quan">
     <div class="docmark"><span class="num">1</span><h2>Tổng quan hệ thống SSO</h2></div>
-    <p class="lede">Điều kiện tiên quyết để tích hợp: app của bạn phải chạy trên 1 <b>subdomain của cùng domain cha</b> với build-web/sso-web (vd <code>chat.xaydung.vn</code> nếu domain cha là <code>xaydung.vn</code>) — cookie đăng nhập chỉ dùng chung được trong phạm vi 1 domain cha.</p>
+    <p class="lede">Điều kiện tiên quyết để tích hợp: app của bạn phải chạy trên 1 <b>subdomain của cùng domain cha</b> với các app đã có (vd <code>chat.xaydung.vn</code> nếu domain cha là <code>xaydung.vn</code>) — cookie đăng nhập chỉ dùng chung được trong phạm vi 1 domain cha.</p>
+
+    <div class="diagram">
+      <pre class="mermaid">
+graph TB
+  Browser["Trình duyệt"]
+  GW["api-gateway<br/>(cổng vào duy nhất, verify JWT qua JWKS)"]
+  SSO["api-sso<br/>(phát hành token, quản lý app + phân quyền)"]
+  DB[("CSDL người dùng &amp; phân quyền dùng chung")]
+  Existing["App đã tích hợp<br/>(vd Tài chính, Nhiệm vụ)"]
+  New["👉 App mới của bạn"]
+
+  Browser -->|1. Mở app| New
+  Browser -->|2. Đăng nhập| SSO
+  Browser -->|3. Mọi request kèm cookie phiên| GW
+  GW -->|xác minh chữ ký + định tuyến| SSO
+  GW -->|định tuyến| Existing
+  GW -->|định tuyến| New
+  SSO --- DB
+  New -.->|đồng bộ dữ liệu người dùng, xem mục 4| SSO
+
+  classDef you fill:#2563a6,stroke:#184b80,color:#fff,font-weight:bold;
+  class New you;
+      </pre>
+      <p class="cap">App của bạn chỉ nói chuyện với gateway — không bao giờ tự lưu mật khẩu hay tự làm màn hình đăng nhập.</p>
+    </div>
 
     <div class="tablewrap">
       <table>
         <thead><tr><th>Thành phần</th><th>Vai trò</th><th>Bạn cần biết gì</th></tr></thead>
         <tbody>
-          <tr><td><code>api-sso</code></td><td>Phát hành/xác thực token, giữ private key</td><td>API thuần, gọi qua gateway — không gọi thẳng</td></tr>
-          <tr><td><code>sso-web</code></td><td>Trang đăng nhập/quên mật khẩu dùng chung</td><td>Redirect người dùng sang đây khi chưa đăng nhập</td></tr>
+          <tr><td><code>api-sso</code></td><td>Phát hành/xác thực token, giữ private key, quản lý danh sách app + ai được dùng app nào</td><td>API thuần, gọi qua gateway — không gọi thẳng</td></tr>
+          <tr><td><code>sso-web</code></td><td>Trang đăng nhập/quên mật khẩu/trang chủ liệt kê app/quản lý tài khoản dùng chung</td><td>Redirect người dùng sang đây khi chưa đăng nhập</td></tr>
           <tr><td><code>api-gateway</code></td><td>Cổng vào duy nhất, verify JWT qua JWKS</td><td>Mọi request (kể cả tới api-sso) đều qua đây</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>6 endpoint api-sso phơi qua gateway</h3>
+    <h3>Các endpoint api-sso phơi qua gateway</h3>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Method</th><th>Path qua gateway</th><th>Dùng khi nào</th></tr></thead>
@@ -141,18 +176,50 @@
           <tr><td>POST</td><td><code>/api/login</code></td><td>Đăng nhập — body <code>{username, password, remember}</code>, <code>username</code> nhận cả tài khoản/email/số điện thoại</td></tr>
           <tr><td>POST</td><td><code>/api/refresh</code></td><td>Làm mới access token khi hết hạn (đọc refresh cookie tự động)</td></tr>
           <tr><td>POST</td><td><code>/api/logout</code></td><td>Thu hồi phiên + xoá cookie</td></tr>
-          <tr><td>GET</td><td><code>/api/me</code></td><td>Kiểm tra đã đăng nhập chưa + lấy thông tin user hiện tại</td></tr>
+          <tr><td>GET</td><td><code>/api/me?app=&lt;app_key&gt;</code></td><td>Kiểm tra đã đăng nhập chưa + lấy thông tin user hiện tại. Kèm <code>?app=</code> để tự chặn 403 nếu chưa được cấp quyền dùng app này — xem mục 3</td></tr>
+          <tr><td>GET</td><td><code>/api/apps</code></td><td>Danh sách app tài khoản hiện tại được cấp quyền (phục vụ trang chủ SSO)</td></tr>
           <tr><td>POST</td><td><code>/api/forgot-password</code></td><td>Body <code>{email}</code> — gửi email chứa link đặt lại mật khẩu</td></tr>
           <tr><td>POST</td><td><code>/api/reset-password-confirm</code></td><td>Body <code>{token, newPassword}</code> — token lấy từ link email</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Token là JWT ký RS256, payload access token: <code>{user_id, full_name, user_name, role_group, type:'access'}</code> — <b>không có sẵn</b> cây quyền (<code>functions</code>/<code>actions</code>), muốn có phải tự gọi <code>GET /me</code>.</p>
+    <p>Token là JWT ký RS256, payload access token: <code>{user_id, session_id, type:'access'}</code> — <b>không có sẵn</b> tên/cây quyền (<code>functions</code>/<code>actions</code>), muốn có phải tự gọi <code>GET /me</code>.</p>
+
+    <div class="callout">
+      <b>Đăng ký trước khi code:</b> mỗi app tích hợp cần 1 <code>app_key</code> (chuỗi định danh ngắn, vd <code>chat</code>) do đội vận hành SSO cấp cùng lúc với domain con và cấu hình CORS — xin cả 3 thứ này trong 1 lần trao đổi, tránh vướng ở bước cuối lúc demo.
+    </div>
   </section>
 
   <section id="web">
     <div class="docmark"><span class="num">2</span><h2>Tích hợp web app</h2></div>
-    <p class="lede">Đúng luồng build-web đang chạy thật trong sandbox — copy được gần như nguyên văn.</p>
+    <p class="lede">Đúng luồng các app hiện có đang chạy thật — copy được gần như nguyên văn.</p>
+
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+  actor U as Người dùng
+  participant App as App của bạn
+  participant GW as api-gateway
+  participant SSO as api-sso
+
+  U->>App: Mở app
+  App->>GW: GET /api/me?app=&lt;app_key&gt;
+  GW->>SSO: forward
+  SSO-->>GW: 401 — chưa có phiên hợp lệ
+  GW-->>App: 401
+  App->>U: Chuyển hướng sang sso-web kèm ?redirect=
+  U->>SSO: Nhập tài khoản / mật khẩu
+  SSO->>SSO: Xác thực, tạo phiên mới
+  SSO-->>U: Set cookie access_token + refresh_token<br/>(Domain=.xaydung.vn) rồi chuyển hướng về redirect
+  U->>App: Quay lại app (trình duyệt đã có cookie)
+  App->>GW: GET /api/me?app=&lt;app_key&gt;
+  GW->>SSO: forward (kèm cookie)
+  SSO-->>GW: 200 — {user, functions, is_admin}
+  GW-->>App: 200
+  App->>U: Hiển thị giao diện đã đăng nhập
+      </pre>
+      <p class="cap">App không tự giữ trạng thái "đã đăng nhập chưa" — luôn hỏi lại qua <code>/me</code> lúc khởi động.</p>
+    </div>
 
     <ol class="steps">
       <li>
@@ -180,7 +247,7 @@ function redirectToLogin() {
       </li>
       <li>
         <span class="stitle">Bootstrap phiên đăng nhập lúc app khởi động</span>
-        Gọi <code>GET /me</code> qua gateway 1 lần lúc app mount (không phải trong từng component con) — 200 thì lưu user vào state, 401 thì gọi bước 3. Phải phân biệt rõ 3 trạng thái <code>loading/authenticated/unauthenticated</code> trong state — nếu chỉ có 2 trạng thái, lúc F5 trang sẽ có 1 khoảnh khắc bị hiểu nhầm là "chưa đăng nhập" và redirect oan trước khi <code>/me</code> kịp trả lời.
+        Gọi <code>GET /me?app=&lt;app_key&gt;</code> qua gateway 1 lần lúc app mount (không phải trong từng component con) — 200 thì lưu user vào state, 401 thì sang bước 3. Phải phân biệt rõ 3 trạng thái <code>loading/authenticated/unauthenticated</code> trong state — nếu chỉ có 2 trạng thái, lúc F5 trang sẽ có 1 khoảnh khắc bị hiểu nhầm là "chưa đăng nhập" và redirect oan trước khi <code>/me</code> kịp trả lời. Xem mục 3 để biết cách xử lý riêng khi gặp <code>403</code> thay vì <code>401</code>.
       </li>
       <li>
         <span class="stitle">Access token hết hạn giữa chừng → tự refresh 1 lần</span>
@@ -194,11 +261,11 @@ apiClient.interceptors.response.use(null, async (error) => {
   }
   return Promise.reject(error);
 });</code></pre>
-        Dùng chung 1 promise đang chạy (không tạo request <code>/refresh</code> mới cho từng request 401 đến cùng lúc) — nhiều request song song lúc token vừa hết hạn mà mỗi cái tự gọi refresh riêng dễ sinh race, đây là bug thật đã xảy ra ở build-web trước khi có SSO.
+        Dùng chung 1 promise đang chạy (không tạo request <code>/refresh</code> mới cho từng request 401 đến cùng lúc) — nhiều request song song lúc token vừa hết hạn mà mỗi cái tự gọi refresh riêng dễ sinh race, đây là bug thật đã xảy ra trước khi có SSO.
       </li>
       <li>
         <span class="stitle">Đăng xuất</span>
-        <code>POST /logout</code> qua gateway rồi xoá state phía client — service tự thu hồi session + clear cả 2 cookie (access/refresh) theo đúng domain đã set, không cần bạn tự xoá cookie tay (không xoá được vì httpOnly).
+        <code>POST /logout</code> qua gateway rồi xoá state phía client — service tự thu hồi session + clear cả 2 cookie (access/refresh) theo đúng domain đã set, không cần bạn tự xoá cookie tay (không xoá được vì httpOnly). Nhân tiện xoá luôn mọi bộ lọc/lựa chọn đã lưu ở <code>localStorage</code> riêng của app bạn — một phiên đăng nhập mới (có thể là người khác) không nên kế thừa lựa chọn của phiên trước.
       </li>
     </ol>
 
@@ -207,8 +274,84 @@ apiClient.interceptors.response.use(null, async (error) => {
     </div>
   </section>
 
+  <section id="phan-quyen">
+    <div class="docmark"><span class="num">3</span><h2>Phân quyền theo app <span class="tag new">Mới</span></h2></div>
+    <p class="lede">Đăng nhập được vào hệ thống và được dùng <b>app của bạn</b> là hai việc khác nhau — đừng nhầm lẫn.</p>
+
+    <p>Một token hợp lệ chỉ chứng minh "người này đã đăng nhập", không nói gì về việc họ có được cấp quyền dùng app của bạn hay không. Chỉ ẩn/hiện nút trên giao diện là <b>không đủ</b>: ai có cookie hợp lệ vẫn gõ thẳng URL vào được nếu tầng phía sau không tự kiểm tra.</p>
+
+    <h3>Cách chặn đúng: luôn kèm <code>app_key</code> khi gọi <code>/me</code></h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Kết quả</th><th>Ý nghĩa</th><th>App nên làm gì</th></tr></thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>Có quyền</td><td>Render giao diện chính</td></tr>
+          <tr><td><code>401</code></td><td>Chưa đăng nhập / hết phiên</td><td>Chuyển hướng sang trang đăng nhập</td></tr>
+          <tr><td><code>403</code></td><td>Đã đăng nhập, không có quyền dùng app này</td><td>Hiện trang "Không có quyền truy cập" + nút đăng xuất — <b>không</b> chuyển hướng sang trang đăng nhập</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout bad">
+      <b>Lỗi thường gặp:</b> gộp chung xử lý 401 và 403 thành "coi như hết phiên, đá về trang đăng nhập". Với 403, người dùng đăng nhập lại vẫn bị từ chối y hệt — tạo vòng lặp vô nghĩa và một thông báo lỗi sai bản chất (họ không hề "hết phiên", chỉ là chưa được cấp quyền).
+    </div>
+
+    <p>Tài khoản có vai trò quản trị hệ thống luôn được đi qua bất kể <code>app_key</code> nào. Sai <code>app_key</code> (gõ nhầm lúc tích hợp) bị coi là "không có quyền" (an toàn hơn là "bỏ qua kiểm tra") — đừng để lỗi đánh máy vô tình tắt luôn lớp bảo vệ này.</p>
+
+    <div class="callout warn">
+      <b>Trước khi bật kiểm tra này cho app thật:</b> đảm bảo mọi người dùng cần dùng app của bạn đã được cấp quyền trong danh mục app (đội SSO seed sẵn hoặc bạn tự vào trang quản trị cấp) — bật kiểm tra mà chưa cấp quyền sẽ khoá nhầm toàn bộ người dùng ngay lúc lên production.
+    </div>
+  </section>
+
+  <section id="dong-bo">
+    <div class="docmark"><span class="num">4</span><h2>Đồng bộ người dùng <span class="tag new">Mới</span></h2></div>
+    <p class="lede">Nguyên tắc chung — cách làm chi tiết (tên API, tên bảng) do đội của bạn tự thiết kế, mỗi app một khác tuỳ nhu cầu.</p>
+
+    <p>Hầu hết app tích hợp đều cần một bản sao cục bộ của dữ liệu người dùng (tên, phòng ban, chức vụ...) để phục vụ nghiệp vụ riêng — vì CSDL người dùng "gốc" và CSDL của app bạn thường tách biệt, không join thẳng được. Phần này mô tả <b>nguyên tắc</b>, không phải một cách làm cụ thể.</p>
+
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+  actor Admin as Quản trị viên
+  participant Core as App quản lý người dùng gốc
+  participant Yours as App của bạn
+
+  Admin->>Core: Tạo / sửa / xoá người dùng
+  Core->>Core: Ghi vào CSDL của Core
+  Core-->>Yours: Gọi API nội bộ để đồng bộ<br/>(kèm khoá bí mật dùng chung giữa 2 bên)
+  Yours->>Yours: Cập nhật (thêm/sửa/xoá mềm)<br/>vào bảng người dùng cục bộ
+  Yours-->>Core: Xác nhận đã nhận<br/>(lỗi ở bước này chỉ ghi log, KHÔNG chặn thao tác chính của Core)
+      </pre>
+      <p class="cap">Mẫu tổng quát — tên API, tên bảng, khoá bí mật cụ thể do 2 đội tự thống nhất khi tích hợp.</p>
+    </div>
+
+    <h3>5 nguyên tắc khi thiết kế phần nhận đồng bộ</h3>
+    <ul class="plain">
+      <li><b>Idempotent</b> (gọi lại nhiều lần vẫn ra cùng kết quả) — dùng "cập nhật hoặc tạo mới nếu chưa có" (upsert) thay vì "chỉ tạo mới", vì phía gọi có thể gọi lại nếu lần trước lỗi mạng.</li>
+      <li><b>Không chặn thao tác chính của Core</b> — nếu app bạn tạm thời không phản hồi, việc tạo/sửa người dùng ở phía Core vẫn phải thành công, chỉ ghi log lỗi đồng bộ để xử lý sau.</li>
+      <li><b>Xác thực bằng khoá riêng cho việc này</b>, không dùng JWT người dùng — đây là lời gọi giữa 2 hệ thống, không có người dùng cuối đứng sau. Dùng 1 khoá bí mật dùng chung (biến môi trường, giống nhau ở cả 2 phía), gửi qua header riêng.</li>
+      <li><b>Chỉ đồng bộ trường bạn thật sự cần</b> — đừng sao chép nguyên cả bảng "cho chắc", đặc biệt tránh nhân bản thêm 1 nơi lưu các trường nhạy cảm không cần thiết cho nghiệp vụ của bạn.</li>
+      <li><b>Xoá mềm, không xoá cứng</b> — khi Core xoá 1 người dùng, bản sao ở app bạn nên đánh dấu ngừng hoạt động thay vì xoá hẳn dòng dữ liệu, vì dữ liệu lịch sử (log thao tác, việc đã giao...) vẫn cần tham chiếu.</li>
+    </ul>
+
+    <div class="callout">
+      <b>Không cần mục này nếu:</b> app của bạn không cần hiển thị thông tin người dùng phong phú, chỉ cần biết "đây là <code>user_id</code> nào" — lấy thẳng từ token đã đủ làm khoá tham chiếu trong CSDL riêng của bạn, không cần đồng bộ gì thêm.
+    </div>
+  </section>
+
+  <section id="giao-dien">
+    <div class="docmark"><span class="num">5</span><h2>Giao diện dùng chung <span class="tag new">Mới</span></h2></div>
+    <p class="lede">Hai điểm chạm nên có để trải nghiệm liền mạch giữa các app trong hệ thống.</p>
+
+    <h3>Icon chuyển đổi app</h3>
+    <p>Đặt 1 icon dạng lưới ở khu vực header (cạnh chuông thông báo/nút đổi theme), bấm vào chuyển hướng sang trang chủ sso-web — nơi liệt kê mọi app người dùng hiện tại được cấp quyền. Không cần gọi API gì thêm — chỉ là 1 liên kết tĩnh trỏ sang domain sso-web.</p>
+
+    <h3>Liên kết "Quản lý tài khoản"</h3>
+    <p>App của bạn <b>không nên</b> tự làm lại màn hình đổi mật khẩu/sửa hồ sơ cá nhân — dễ dẫn tới 2 nơi cùng ghi 1 dữ liệu theo 2 đường khác nhau, lệch dữ liệu về sau. Trang hồ sơ cá nhân trong app của bạn nên ở dạng <b>chỉ xem</b>, kèm 1 nút đưa người dùng sang trang "Quản lý tài khoản" của sso-web để họ tự sửa thông tin, đổi mật khẩu, hoặc xem/thu hồi các phiên đăng nhập đang hoạt động.</p>
+  </section>
+
   <section id="mobile">
-    <div class="docmark"><span class="num">3</span><h2>Tích hợp app mobile</h2></div>
+    <div class="docmark"><span class="num">6</span><h2>Tích hợp app mobile</h2></div>
     <p class="lede">Mobile không dùng lại được cơ chế cookie tự động của trình duyệt, nhưng <b>không cần endpoint mới</b> — dùng đúng các endpoint như web, app tự đọc token từ response rồi tự đính vào request sau. api-sso đã hỗ trợ sẵn: <code>/me</code> nhận <code>Authorization: Bearer</code>, còn <code>/refresh</code>/<code>/logout</code> đọc token từ header <code>Cookie</code> (do <code>cookie-parser</code> parse) nên client tự dựng header đó được.</p>
 
     <div class="diagram">
@@ -249,7 +392,7 @@ sequenceDiagram
       </li>
       <li>
         <span class="stitle">Gọi API nghiệp vụ</span>
-        Gắn header <code>Authorization: Bearer &lt;access_token&gt;</code> cho mọi request qua gateway. Gateway và middleware <code>authenticate</code> của các service đã đọc theo thứ tự "cookie trước, header <code>Authorization</code> sau" (xem <code>authMiddleware.ts</code>) nên không cần đổi gì phía service.
+        Gắn header <code>Authorization: Bearer &lt;access_token&gt;</code> cho mọi request qua gateway. Gateway và middleware xác thực của các service đã đọc theo thứ tự "cookie trước, header <code>Authorization</code> sau" nên không cần đổi gì phía service.
       </li>
       <li>
         <span class="stitle">Access token hết hạn (401)</span>
@@ -271,23 +414,38 @@ sequenceDiagram
   </section>
 
   <section id="luu-y">
-    <div class="docmark"><span class="num">4</span><h2>Lưu ý chung / lỗi hay gặp</h2></div>
+    <div class="docmark"><span class="num">7</span><h2>Lưu ý chung / lỗi hay gặp</h2></div>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
         <tbody>
           <tr><td><code>/me</code> luôn 401 dù vừa login xong</td><td>Thiếu <code>withCredentials</code> / <code>credentials:'include'</code>, hoặc app không nằm trên subdomain của domain cha nên cookie không gửi kèm</td></tr>
           <tr><td>CORS lỗi dù đã khai origin</td><td>Origin của bạn dùng chung biến với app khác — package <code>cors</code> không tách chuỗi theo dấu phẩy, cần biến riêng cho từng pipeline</td></tr>
-          <tr><td>Redirect sang sso-web nhưng quay lại không đúng trang</td><td>Domain redirect chưa được thêm vào whitelist lúc build sso-web (<code>VITE_ALLOWED_REDIRECT_SUFFIX</code>) — báo đội SSO thêm domain của bạn</td></tr>
+          <tr><td>Redirect sang sso-web nhưng quay lại không đúng trang</td><td>Domain redirect chưa được thêm vào whitelist lúc build sso-web — báo đội SSO thêm domain của bạn</td></tr>
           <tr><td>Đăng xuất xong vẫn còn đăng nhập được</td><td>Chỉ xoá cookie phía client tay (không xoá được vì httpOnly) thay vì gọi <code>POST /logout</code> — phải gọi đúng endpoint để service revoke session + clear cookie đúng domain</td></tr>
-          <tr><td>Token verify được ở service này nhưng không được ở service khác</td><td>Service kia còn dùng logic cũ (so khớp secret) thay vì verify qua JWKS (<code>jwks-rsa</code>, biến môi trường <code>JWT_JWKS_URI</code> trỏ <code>{api-sso}/.well-known/jwks.json</code>)</td></tr>
+          <tr><td>Token verify được ở service này nhưng không được ở service khác</td><td>Service kia còn dùng logic cũ (so khớp secret) thay vì verify qua JWKS (<code>jwks-rsa</code>, biến môi trường trỏ tới <code>{api-sso}/.well-known/jwks.json</code>)</td></tr>
+          <tr><td>Vừa bật kiểm tra <code>?app=</code> thì cả công ty bị chặn hết</td><td>Chưa cấp quyền dùng app cho người dùng hiện có trước khi bật — luôn seed/gán quyền trước, bật kiểm tra sau (xem mục 3)</td></tr>
+          <tr><td>Người có quyền vẫn bị đá về trang đăng nhập liên tục</td><td>App đang xử lý 403 (không có quyền) giống hệt 401 (chưa đăng nhập) — cần tách 2 nhánh riêng, xem mục 3</td></tr>
         </tbody>
       </table>
     </div>
     <div class="callout">
-      <b>Đăng ký trước khi tích hợp:</b> báo đội SSO 3 thứ — domain con app sẽ dùng, origin cần thêm CORS, và (nếu redirect người dùng) domain/scheme cần thêm vào whitelist redirect — để tránh vướng ở bước cuối lúc demo.
+      <b>Đăng ký trước khi tích hợp:</b> báo đội SSO các thứ sau trong 1 lần trao đổi — domain con app sẽ dùng, origin cần thêm CORS, <code>app_key</code> cho app của bạn, domain/scheme cần thêm vào whitelist redirect (nếu có) — để tránh vướng ở bước cuối lúc demo.
     </div>
   </section>
+
+  <div class="checklist">
+    <h3 style="margin-top:0">Checklist trước khi go-live</h3>
+    <ul style="list-style:none;padding:0;margin:0">
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Đã có <code>app_key</code>, domain con, cấu hình CORS được đội SSO xác nhận.</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Bootstrap app gọi <code>GET /me?app=&lt;app_key&gt;</code>, không phải <code>/me</code> trơn.</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Xử lý riêng 401 (chuyển hướng đăng nhập) và 403 (thông báo không có quyền, không chuyển hướng).</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Đã cấp quyền dùng app cho toàn bộ người dùng cần dùng ngay — <b>trước</b> khi bật kiểm tra <code>?app=</code>.</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Trang hồ sơ cá nhân trong app chỉ hiển thị, có liên kết sang "Quản lý tài khoản" của sso-web.</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Icon chuyển đổi app ở header trỏ đúng về trang chủ sso-web.</li>
+      <li class="checklist-item" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;font-size:14px"><span class="box" style="flex-shrink:0;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line);border-radius:4px"></span>Nếu có đồng bộ người dùng: đã kiểm thử tạo/sửa/xoá ở nguồn, xác nhận đồng bộ đúng kể cả khi app của bạn tạm thời offline (nguồn vẫn phải thành công).</li>
+    </ul>
+  </div>
 
   <footer>XDHY · Hướng dẫn tích hợp SSO cho app khác · web + mobile</footer>
 </div>

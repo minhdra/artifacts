@@ -36,7 +36,7 @@
     "icon": "🔌",
     "category": "XDHY",
     "title": "Tích hợp SSO cho app khác",
-    "desc": "Hướng dẫn từng bước cho chủ app khác (web + mobile) kết nối vào SSO XDHY",
-    "date": "2026-09-05"
+    "desc": "Hướng dẫn từng bước cho chủ app khác (web + mobile) kết nối vào SSO XDHY - kèm sơ đồ kiến trúc/luồng đăng nhập, phân quyền theo app, đồng bộ người dùng",
+    "date": "2026-09-07"
   }
 ]
