@@ -186,8 +186,23 @@ graph TB
     <p>Token là JWT ký RS256, payload access token: <code>{user_id, session_id, type:'access'}</code> — <b>không có sẵn</b> tên/cây quyền (<code>functions</code>/<code>actions</code>), muốn có phải tự gọi <code>GET /me</code>.</p>
 
     <div class="callout">
-      <b>Đăng ký trước khi code:</b> mỗi app tích hợp cần 1 <code>app_key</code> (chuỗi định danh ngắn, vd <code>chat</code>) do đội vận hành SSO cấp cùng lúc với domain con và cấu hình CORS — xin cả 3 thứ này trong 1 lần trao đổi, tránh vướng ở bước cuối lúc demo.
+      <b>Đăng ký trước khi code:</b> mỗi app tích hợp cần 1 <code>app_key</code> (chuỗi định danh ngắn) do đội vận hành SSO cấp cùng lúc với domain con và cấu hình CORS — xin cả 3 thứ này trong 1 lần trao đổi, tránh vướng ở bước cuối lúc demo.
     </div>
+
+    <h3>app_key đã đặt sẵn</h3>
+    <p>4 app_key sau đã có trong danh mục app của SSO — nếu bạn đang làm đúng 1 trong các app này thì dùng lại, <b>không</b> xin key mới:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>app_key</th><th>App</th></tr></thead>
+        <tbody>
+          <tr><td><code>finance</code></td><td>Tài chính (quản trị hệ thống + tài chính)</td></tr>
+          <tr><td><code>task</code></td><td>Nhiệm vụ</td></tr>
+          <tr><td><code>chat</code></td><td>Trò chuyện nội bộ</td></tr>
+          <tr><td><code>meeting</code></td><td>Cuộc họp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>App mới ngoài 4 cái trên (không phải chat/meeting) mới cần xin <code>app_key</code> mới ở đội SSO.</p>
   </section>
 
   <section id="web">
@@ -325,6 +340,33 @@ sequenceDiagram
       <p class="cap">Mẫu tổng quát — tên API, tên bảng, khoá bí mật cụ thể do 2 đội tự thống nhất khi tích hợp.</p>
     </div>
 
+    <h3>Đầu vào API sync — ví dụ</h3>
+    <p>App "nguồn sự thật" gọi sang app của bạn mỗi khi tạo/sửa/xoá người dùng. Payload cụ thể do 2 đội tự thống nhất — dưới đây là ví dụ các field <b>thường gặp</b>, để bạn hình dung lúc thiết kế bảng người dùng cục bộ:</p>
+    <pre><code>// POST https://app-cua-ban.xaydung.vn/internal/sync/users
+// Header: X-Internal-Secret: &lt;khoá bí mật dùng chung&gt;
+{
+  "user_id": "3f1e2a...-uuid",     // khoá chính, dùng để join với dữ liệu của bạn
+  "user_name": "nguyenvana",
+  "full_name": "Nguyễn Văn A",
+  "email": "a.nguyen@xaydung.vn",
+  "phone_number": "0901234567",
+  "avatar": "uploads/2026-09-01/abc.png",
+  "branch_id": 3,
+  "branch_name": "Chi nhánh Hà Nội",
+  "department_id": 8,
+  "department_name": "Phòng Kỹ thuật",
+  "position_id": 5,
+  "position_name": "Trưởng phòng",
+  "active_flag": 1                // 0 = đã xoá/ngừng hoạt động (xoá mềm)
+}
+
+// POST .../internal/sync/users/delete
+{
+  "json_list": [{ "user_id": "3f1e2a...-uuid" }],
+  "updated_by_id": "system"
+}</code></pre>
+    <p>Bạn không bắt buộc nhận đủ toàn bộ field trên — chỉ khai báo trong hợp đồng API những field app của bạn thật sự dùng tới (xem nguyên tắc "chỉ đồng bộ trường bạn thật sự cần" bên dưới).</p>
+
     <h3>5 nguyên tắc khi thiết kế phần nhận đồng bộ</h3>
     <ul class="plain">
       <li><b>Idempotent</b> (gọi lại nhiều lần vẫn ra cùng kết quả) — dùng "cập nhật hoặc tạo mới nếu chưa có" (upsert) thay vì "chỉ tạo mới", vì phía gọi có thể gọi lại nếu lần trước lỗi mạng.</li>
@@ -348,6 +390,37 @@ sequenceDiagram
 
     <h3>Liên kết "Quản lý tài khoản"</h3>
     <p>App của bạn <b>không nên</b> tự làm lại màn hình đổi mật khẩu/sửa hồ sơ cá nhân — dễ dẫn tới 2 nơi cùng ghi 1 dữ liệu theo 2 đường khác nhau, lệch dữ liệu về sau. Trang hồ sơ cá nhân trong app của bạn nên ở dạng <b>chỉ xem</b>, kèm 1 nút đưa người dùng sang trang "Quản lý tài khoản" của sso-web để họ tự sửa thông tin, đổi mật khẩu, hoặc xem/thu hồi các phiên đăng nhập đang hoạt động.</p>
+
+    <h3>Đồng bộ chế độ sáng/tối (nếu app của bạn có dark mode)</h3>
+    <p>Người dùng chuyển qua lại nhiều app trong ngày — nếu mỗi app tự nhớ theme riêng, họ sẽ thấy chớp sáng/tối mỗi lần đổi app dù vừa chọn dark mode ở app trước đó. Có sẵn 1 cookie dùng chung cho việc này, không cần hỏi đội SSO thêm gì — tự đọc/ghi theo đúng tên và định dạng dưới đây là dùng chung được ngay.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Thuộc tính</th><th>Giá trị</th></tr></thead>
+        <tbody>
+          <tr><td>Tên cookie</td><td><code>xdhy_theme_mode</code></td></tr>
+          <tr><td>Giá trị hợp lệ</td><td><code>"light"</code> hoặc <code>"dark"</code></td></tr>
+          <tr><td>Domain</td><td><code>Domain=.xaydung.vn</code> (domain cha) — đọc/ghi được từ mọi subdomain, kể cả trang đăng nhập ở origin khác</td></tr>
+          <tr><td>Loại cookie</td><td>Cookie thường, <b>không</b> httpOnly (JS tự đọc/ghi được) — không dùng cookie này cho bất cứ thứ gì liên quan xác thực</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><code>// Đọc lúc khởi động - đặt data-theme lên &lt;html&gt; TRƯỚC khi app render
+// (đặt trong effect sẽ bị nháy sai theme 1 nhịp lúc load trang).
+function getInitialTheme() {
+  const match = document.cookie.match(new RegExp('(?:^|;\\s*)xdhy_theme_mode=([^;]*)'));
+  return match &amp;&amp; decodeURIComponent(match[1]) === 'dark' ? 'dark' : 'light';
+}
+document.documentElement.setAttribute('data-theme', getInitialTheme());
+
+// Ghi lại mỗi khi người dùng đổi theme trong app của bạn
+function setSharedTheme(mode) { // mode: 'light' | 'dark'
+  const domainPart = COOKIE_DOMAIN ? `; Domain=${COOKIE_DOMAIN}` : '';
+  document.cookie = `xdhy_theme_mode=${mode}; Path=/; Max-Age=${400*24*60*60}; SameSite=Lax${domainPart}`;
+  document.documentElement.setAttribute('data-theme', mode);
+}</code></pre>
+    <div class="callout">
+      <b>Không bắt buộc:</b> nếu app của bạn chưa có dark mode, bỏ qua mục này — cookie không đọc được thì các app khác tự dùng theme mặc định (sáng) của họ, không có gì hỏng.
+    </div>
   </section>
 
   <section id="mobile">
