@@ -38,5 +38,13 @@
     "title": "Tích hợp SSO cho app khác",
     "desc": "Hướng dẫn từng bước cho chủ app khác (web + mobile) kết nối vào SSO XDHY - kèm sơ đồ kiến trúc/luồng đăng nhập, phân quyền theo app, đồng bộ người dùng, đồng bộ dark mode",
     "date": "2026-09-07"
+  },
+  {
+    "slug": "kien-truc-trien-khai-da-khach-hang",
+    "icon": "🧭",
+    "category": "Kiến trúc",
+    "title": "Triển khai cho nhiều khách hàng",
+    "desc": "Đề xuất kiến trúc, quản lý mã nguồn, công cụ cài đặt chọn từng bước, lộ trình và các quyết định cần chốt, kèm 3 sơ đồ draw.io",
+    "date": "2026-10-24"
   }
 ]
